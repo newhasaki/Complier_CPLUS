@@ -207,7 +207,7 @@ ExpNode* Parse::syn_exp(){
 ExpNode* Parse::syn_bool_and(){
     
     ExpNode* left_node = syn_add_sub();
-    ExpNode* and_node = nullptr;
+    ExpNode* and_node = left_node;
     while (curToken->getTag() == AND) {
         TAG op = curToken->getTag();
         nextToken();
@@ -222,7 +222,7 @@ ExpNode* Parse::syn_bool_or(){
     
     ExpNode* left_node = syn_bool_and();
     
-    ExpNode* or_node = nullptr;
+    ExpNode* or_node = left_node;
     while (curToken->getTag() == OR) {
         TAG op = curToken->getTag();
         nextToken();
@@ -236,7 +236,7 @@ ExpNode* Parse::syn_bool_or(){
 ExpNode* Parse::syn_bool_compare(){
     
     ExpNode* left_node = syn_bool_or();
-    ExpNode* cmp_node = nullptr;
+    ExpNode* cmp_node = left_node;
     while(curToken->getTag()==EQU||curToken->getTag()==GE
           ||curToken->getTag()==LE||curToken->getTag()==LT
           ||curToken->getTag()==GT||curToken->getTag()==NEQU){
@@ -281,9 +281,14 @@ ExpNode* Parse::syn_factor(){
         return const_node;
         
     }else if(match(NOT)){
-        syn_factor();  //非
+        return syn_factor();  //非
     }else if(match(LPAREN)){
-        syn_exp();
+        ExpNode* expNode = syn_exp();
+        if(match(RPAREN)){
+             return expNode;
+        }else{
+            printf("except )\n");
+        }
     }
     
     return nullptr;
