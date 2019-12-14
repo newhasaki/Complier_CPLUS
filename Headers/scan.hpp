@@ -18,9 +18,6 @@ using std::vector;
 using std::string;
 using std::map;
 
-
-
-
 class Token
 {
 public:
@@ -59,14 +56,17 @@ public:
     NUM(float v);
     NUM(char v);
     NUM(const char* v);
+    NUM(bool v);
     ~NUM();
 public:
     void setInt(int v);
     void setFloat(float v);
-    int getInt();
-    float getFloat();
     void setChar(char v);
     void setStr(char* v);
+    void setBool(bool v);
+    bool getBool();
+    int getInt();
+    float getFloat();
     char getChar();
     char* getStr();
     virtual void toPrintf();

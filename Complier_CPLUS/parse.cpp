@@ -22,6 +22,8 @@ void Parse::startParse(){
 void Parse::syn_program(){
     vector<VarDeclare*>* vlist = new vector<VarDeclare*>();
     syn_type(vlist);
+    
+    
 }
 
 void Parse::syn_localdef(vector<VarDeclare*>* vlist,TAG datatype){
@@ -33,20 +35,15 @@ void Parse::syn_localdef(vector<VarDeclare*>* vlist,TAG datatype){
             syn_varinit(vlist,id->getName(),datatype);
         }else{
             if(match(SEMICON)){
-                printf("local var def\n");
+                printf("local var declare\n");
             }
         }
     }
 }
 
 void Parse::syn_type(vector<VarDeclare*>* vlist){
-    if(curToken->getTag() == KW_FLOAT
-       ||curToken->getTag()== KW_INT
-       ||curToken->getTag() == KW_VOID){
-        
-       
+    if(match_type()){
         syn_id(vlist,curToken->getTag());
-        
     }else{
         printf("ERROR\n");
     }
@@ -100,14 +97,11 @@ void Parse::syn_id(vector<VarDeclare*>* vlist,TAG datatype){
             }
             
         }else{
-            //Id* id = dynamic_cast<Id*>(curToken);           //变量声明
             
             VarDeclare* var_declare  = new VarDeclare(id->getName(),VARDECLARE,datatype);
             Symbols* symbols = new Symbols();
             symbols->insert(id->getName(),var_declare);     //加入当前符号表，因为参数也在当前作用域内
             
-            //curSymbol->push_back(symbols);
-           
             vlist->push_back(var_declare);     //参数列表
             
             if(match(SEMICON))
@@ -116,16 +110,16 @@ void Parse::syn_id(vector<VarDeclare*>* vlist,TAG datatype){
                 syn_id(vlist,datatype);
             else if(match(LPAREN)){
                 syn_type(vlist);
-                if(!match(RPAREN)){
+                if(match(RPAREN)){
                     
                     if(match(SEMICON)){
-                        printf("fun define");
+                        printf("fun declare");
                     }else if(match(LBRACE)){
                         
                         syn_block();
                         
                         if(match(RBRACE)){
-                                printf("fun declare\n");
+                                printf("fun define\n");
                             }
                         }
                     }
@@ -143,9 +137,7 @@ void Parse::syn_id(vector<VarDeclare*>* vlist,TAG datatype){
 
 void Parse::syn_varinit(vector<VarDeclare*>* vlist,std::string varname,TAG datatype){
     
-    if(match(ID)||match(CONST_INT)
-       ||match(CONST_CHAR)||match(CONST_FLOAT)
-       ||match(CONST_STR)){
+    if(match(ID)||match_const()){
         
         ExpNode* rootNode = syn_exp();
         VarDef* var_define = new VarDef(varname, VARDEFINE,datatype,rootNode);
@@ -181,7 +173,8 @@ void Parse::syn_ifstat(){
         
         curSymbol = new vector<Symbols*>(); //创建符号表
         symbolStack.push_back(curSymbol);
-        syn_statement();
+        vector<VarDeclare*>* vlist = new vector<VarDeclare*>();
+        syn_statement(vlist);
         if(!match(RBRACE)){
             printf("except }\n");
         }else{
@@ -194,7 +187,8 @@ void Parse::syn_ifstat(){
         }
     }
     else{
-        syn_statement();
+        vector<VarDeclare*>* vlist = new vector<VarDeclare*>();
+        syn_statement(vlist);
         if(match(SEMICON))
             printf("if singel statement\n");
     }
@@ -342,24 +336,22 @@ ExpNode* Parse::syn_mul_div(){
     return md_node;
 }
 
-
 void Parse::syn_block(){
+    vector<VarDeclare*>* vlist = new vector<VarDeclare*>();
     do{
-        syn_statement();
+        syn_statement(vlist);
     }while(curToken->getTag()!=RBRACE);
 }
 
-void Parse::syn_statement(){
+void Parse::syn_statement(vector<VarDeclare*>* vlist){
     
     switch (curToken->getTag()) {
        case KW_INT:
        case KW_FLOAT:
        case KW_VOID:
        case KW_CHAR:
-        {
-           vector<VarDeclare*>* vlist = new vector<VarDeclare*>();
+       case KW_BOOL:
            syn_localdef(vlist,curToken->getTag());
-        }
            break;
        case KW_IF:
            syn_ifstat();
@@ -393,13 +385,23 @@ bool Parse::match(TAG tag){
 }
 
 bool Parse::match_const(){
-    if(curToken->getTag()==KW_FALSE||curToken->getTag()== KW_TRUE
+    if(curToken->getTag()==KW_FALSE_CONST||curToken->getTag()== KW_TRUE_CONST
        ||curToken->getTag()== CONST_INT||curToken->getTag()== CONST_FLOAT
        ||curToken->getTag()==CONST_STR||curToken->getTag()==CONST_CHAR){
         return true;
     }
     return false;
 }
+
+bool Parse::match_type(){
+    if(curToken->getTag()==KW_INT||curToken->getTag()== KW_FLOAT
+          ||curToken->getTag()== KW_VOID||curToken->getTag()== KW_BOOL
+          ||curToken->getTag()== KW_CHAR||curToken->getTag()){
+           return true;
+       }
+       return false;
+}
+
 
 void Parse::nextToken(){
     curToken = mTokens.at(mindex++);

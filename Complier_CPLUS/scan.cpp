@@ -75,8 +75,8 @@ void Token::toPrintf(){
         case KW_CONTINUE:cout<<"KW_CONTINUE"<<endl;break;
         case KW_RETURN:cout<<"KW_RETURN"<<endl;break;
         case KW_MAIN:cout<<"KW_MAIN"<<endl;break;
-        case KW_TRUE:cout<<"KW_TRUE"<<endl;break;
-        case KW_FALSE:cout<<"KW_FALSE"<<endl;break;
+        case KW_TRUE_CONST:cout<<"KW_TRUE"<<endl;break;
+        case KW_FALSE_CONST:cout<<"KW_FALSE"<<endl;break;
         case CH:break;
         case STR:break;
         case NOT:cout<<"NOT"<<endl;break;
@@ -153,8 +153,9 @@ Keywords::Keywords(){
     //keywords["main"] = KW_MAIN;
     keywords["float"] = KW_FLOAT;
     keywords["break"] = KW_BREAK;
-    keywords["true"] = KW_TRUE;
-    keywords["false"] = KW_FALSE;   
+    keywords["true"] = KW_TRUE_CONST;
+    keywords["false"] = KW_FALSE_CONST;
+    keywords["bool"] = KW_BOOL;
 }
 
 TAG Keywords::getTag(string name){
@@ -182,6 +183,16 @@ NUM::NUM(char v):Token(CONST_CHAR){
 
 NUM::NUM(const char* v):Token(CONST_STR){
     strcpy(this->val.sstr, v);
+}
+
+NUM::NUM(bool v){
+    if(v)
+        setTag(KW_TRUE_CONST);
+    else
+        setTag(KW_FALSE_CONST);
+    
+    
+    this->val.bdata = v;
 }
 
 NUM::~NUM(){
@@ -217,6 +228,14 @@ char NUM::getChar(){
 
 char* NUM::getStr(){
     return this->val.sstr;
+}
+
+void NUM::setBool(bool v){
+    this->val.bdata = v;
+}
+
+bool NUM::getBool(){
+    return this->val.bdata;
 }
 
 VarDataDef NUM::getVarDataDef(){
@@ -414,11 +433,21 @@ Token* Scan::tokenize(){
             nextChar();
         }while(isalnum(getCurChar()));
         backChar();
-        if(keywords.getTag(str) == ID){
-            ptoken = new Id(str);       //自定义符号
-            //ptoken->setTag(ID);
-        }else{
-            ptoken = new Token(keywords.getTag(str));   //关键字
+        TAG curTag = keywords.getTag(str);
+        
+        switch (curTag) {
+            case ID:
+                ptoken = new Id(str);       //自定义符号
+                break;
+            case KW_FALSE_CONST:            //bool 常量
+                ptoken = new NUM(false);
+                break;
+            case KW_TRUE_CONST:
+                ptoken = new NUM(true);
+                break;
+            default:
+                ptoken = new Token(keywords.getTag(str));   //关键字
+                break;
         }
         return ptoken;
     }

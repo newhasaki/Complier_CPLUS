@@ -7,16 +7,32 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "5EB987D8-24DC-4030-81BE-2853E97EA1FD"
+            uuid = "16FD9C95-0EA8-4B80-9DAE-BD187830A689"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Complier_CPLUS/parse.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "286"
-            endingLineNumber = "286"
-            landmarkName = "Parse::syn_factor()"
+            startingLineNumber = "140"
+            endingLineNumber = "140"
+            landmarkName = "Parse::syn_varinit(vlist, varname, datatype)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "5D4AB45C-C8F8-4EBE-A317-4E3118873413"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Complier_CPLUS/parse.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "354"
+            endingLineNumber = "354"
+            landmarkName = "Parse::syn_statement(vlist)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

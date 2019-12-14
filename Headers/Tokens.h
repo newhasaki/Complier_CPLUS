@@ -18,6 +18,7 @@ union VarDataDef{
     float vdata;
     char cdata;
     char sstr[MAX];
+    bool bdata;
 };
 
 enum TAG{ERR,
@@ -25,7 +26,7 @@ enum TAG{ERR,
     ID,
     KW_INT,KW_CHAR,KW_VOID,
     KW_EXTERN,KW_FLOAT,
-    KW_TRUE,KW_FALSE,
+    KW_TRUE_CONST,KW_FALSE_CONST,KW_BOOL,
     CH,STR,
     NOT,LEA,
     ADD,SUB,MUL,DIV,MOD,
