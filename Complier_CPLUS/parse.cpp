@@ -26,17 +26,20 @@ void Parse::syn_program(){
     
 }
 
-void Parse::syn_localdef(vector<VarDeclare*>* vlist,TAG datatype){
+void Parse::syn_localvar(vector<VarDeclare*>* vlist,TAG datatype){
     nextToken();
     if(match(ID)){
         Id* id = dynamic_cast<Id*>(curToken);
         nextToken();
         if(match(ASSIGN)){
-            syn_varinit(vlist,id->getName(),datatype);
-        }else{
-            if(match(SEMICON)){
-                printf("local var declare\n");
-            }
+            syn_vardefine(vlist,id->getName(),datatype);
+            nextToken();
+            if(match(SEMICON))
+                printf("init var finish\n");
+            if(match(COMMA))
+                syn_localvar(vlist,datatype);
+        }else if(match(SEMICON)||match(COMMA)){
+            syn_vardeclare(vlist,id->getName(),datatype);
         }
     }
 }
@@ -60,7 +63,7 @@ void Parse::syn_id(vector<VarDeclare*>* vlist,TAG datatype){
         Id* id = dynamic_cast<Id*>(curToken);
         nextToken();
         if(match(EQU)){
-            syn_varinit(vlist,id->getName(),datatype);
+            syn_vardefine(vlist,id->getName(),datatype);
         }else if(match(LPAREN)){
             
             printf("fun\n");
@@ -134,24 +137,21 @@ void Parse::syn_id(vector<VarDeclare*>* vlist,TAG datatype){
 /*
  变量定义
  */
-
-void Parse::syn_varinit(vector<VarDeclare*>* vlist,std::string varname,TAG datatype){
-    
+void Parse::syn_vardefine(vector<VarDeclare*>* vlist,std::string varname,TAG datatype){
     if(match(ID)||match_const()){
-        
         ExpNode* rootNode = syn_exp();
         VarDef* var_define = new VarDef(varname, VARDEFINE,datatype,rootNode);
         Symbols* symbols = new Symbols();
         symbols->insert(varname,var_define);
         curSymbol->push_back(symbols);
-        
-        nextToken();
-        
-        if(match(SEMICON))
-            printf("init var\n");
-        if(match(COMMA))
-            syn_id(vlist,datatype);
     }
+}
+
+/*
+变量声明
+*/
+void Parse::syn_vardeclare(vector<VarDeclare*>*,std::string varname,TAG datatype){
+    
 }
 
 void Parse::syn_ifstat(){
@@ -345,13 +345,13 @@ void Parse::syn_block(){
 
 void Parse::syn_statement(vector<VarDeclare*>* vlist){
     
-    switch (curToken->getTag()) {
+    switch (curToken->getTag()) {               //在函数体中中以数据类型开始的关键字只有变量定义和变量声明
        case KW_INT:
        case KW_FLOAT:
        case KW_VOID:
        case KW_CHAR:
        case KW_BOOL:
-           syn_localdef(vlist,curToken->getTag());
+           syn_localvar(vlist,curToken->getTag());
            break;
        case KW_IF:
            syn_ifstat();
