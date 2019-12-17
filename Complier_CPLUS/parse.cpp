@@ -26,20 +26,29 @@ void Parse::syn_program(){
     
 }
 
+/*
+ 
+
+ */
 void Parse::syn_localvar(vector<VarDeclare*>* vlist,TAG datatype){
     nextToken();
-    if(match(ID)){
-        Id* id = dynamic_cast<Id*>(curToken);
-        nextToken();
-        if(match(ASSIGN)){
-            syn_vardefine(vlist,id->getName(),datatype);
+    while(curToken->getTag()!=SEMICON){
+        if(match(ID)){
+            Id* id = dynamic_cast<Id*>(curToken);
             nextToken();
-            if(match(SEMICON))
-                printf("init var finish\n");
-            if(match(COMMA))
-                syn_localvar(vlist,datatype);
-        }else if(match(SEMICON)||match(COMMA)){
-            syn_vardeclare(vlist,id->getName(),datatype);
+            if(match(ASSIGN)){
+                if(match(ID)||match_const())
+                    syn_vardefine(vlist,id->getName(),datatype);
+                if(match(SEMICON))
+                    break;
+                if(match(COMMA))
+                    continue;
+            }else if(match(SEMICON)){
+                syn_vardeclare(vlist,id->getName(),datatype);
+                break;
+            }else if(match(COMMA)){
+                syn_vardeclare(vlist,id->getName(),datatype);
+            }
         }
     }
 }
@@ -138,22 +147,26 @@ void Parse::syn_id(vector<VarDeclare*>* vlist,TAG datatype){
  变量定义
  */
 void Parse::syn_vardefine(vector<VarDeclare*>* vlist,std::string varname,TAG datatype){
-    if(match(ID)||match_const()){
         ExpNode* rootNode = syn_exp();
         VarDef* var_define = new VarDef(varname, VARDEFINE,datatype,rootNode);
-        Symbols* symbols = new Symbols();
-        symbols->insert(varname,var_define);
-        curSymbol->push_back(symbols);
-    }
+        Symbols* symbol = new Symbols();
+        symbol->insert(varname,var_define);
+        curSymbol->push_back(symbol);
 }
 
 /*
 变量声明
 */
 void Parse::syn_vardeclare(vector<VarDeclare*>*,std::string varname,TAG datatype){
-    
+    VarDeclare* var_declare = new VarDeclare(varname,VARDECLARE,datatype);
+    Symbols* symbol = new Symbols();
+    symbol->insert(varname, var_declare);
+    curSymbol->push_back(symbol);
 }
 
+/*
+    if else语句
+*/
 void Parse::syn_ifstat(){
     if(!match(LPAREN))
         printf("except (\n");
