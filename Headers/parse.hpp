@@ -21,16 +21,18 @@ public:
     Parse(vector<Token*>&);
     void startParse();
 private:
-    void syn_localvar(vector<VarDeclare*>*,TAG datatype);//变量定义
-    void syn_type(vector<VarDeclare*>*);
-    void syn_id(vector<VarDeclare*>*,TAG datatype);
+    void syn_localvar(TAG datatype);//变量定义
+    void syn_type();
+    void syn_id(TAG datatype);
     void syn_fundef();      //函数定义
     void syn_fundeclare();  //函数声明
-    void syn_statement(vector<VarDeclare*>*);   //函数体;
+    void syn_statement();   //函数体;
     void syn_program();
-    void syn_paralist(vector<VarDeclare*>*);
-    void syn_vardefine(vector<VarDeclare*>*,std::string varname,TAG datatype);
-    void syn_vardeclare(vector<VarDeclare*>*,std::string varname,TAG datatype);
+    Symbols* syn_paralist();
+    SymDeclare* syn_parameters(std::string varname,TAG datatype);
+    SymDeclare* syn_parameters_init(std::string varname,TAG datatype);
+    SymDeclare* syn_vardefine(std::string varname,TAG datatype);
+    SymDeclare* syn_vardeclare(std::string varname,TAG datatype);
     void syn_datalist();
     void syn_ifstat();
     ExpNode* syn_exp();
@@ -44,7 +46,6 @@ private:
     ExpNode* syn_mul_div();
     bool checkRepeatFunDeclare(SymDeclare* sym);
     void add_type_value(VarDataDef* vdd);
-    
     bool match(TAG tag);
     bool match_const();
     bool match_type();
@@ -54,10 +55,8 @@ private:
     vector<Token*> mTokens;
     Token* curToken;
     size_t mindex;              //向前看指针
-    std::vector<vector<Symbols*>*> symbolStack;
-    vector<Symbols*>* curSymbol;
-    
-    
+    vector<Symbols*> symbolStack;
+    Symbols* curSymbol;
 };
 
 

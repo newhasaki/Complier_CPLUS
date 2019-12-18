@@ -5,7 +5,6 @@
 //  Created by mac on 2019/12/3.
 //  Copyright © 2019 mac. All rights reserved.
 //
-
 #include "symbols.hpp"
 
 Symbols::~Symbols(){
@@ -34,13 +33,27 @@ SymDeclare* Symbols::find(const std::string& name){
     return nullptr;
 }
 
+std::map<std::string,SymDeclare*>* Symbols::getSyms(){
+    return &syms;
+}
+
 std::string SymDeclare::getName(){
     return name;
+}
+
+SymDeclare::SymDeclare(const std::string name, PARSETYPE type,TAG datatype){
+    setName(name);
+    setParseType(type);
+    setDataType(datatype);
 }
 
 SymDeclare::SymDeclare(const std::string name, PARSETYPE type){
     setName(name);
     setParseType(type);
+}
+
+void SymDeclare::setDataType(TAG datatype){
+    this->datatype = datatype;
 }
 
 void SymDeclare::setName(std::string name){
@@ -55,28 +68,82 @@ PARSETYPE SymDeclare::getParseType(){
     return this->parseType;
 }
 
+TAG SymDeclare::getDataType(){
+    return datatype;
+}
+
 void VarDef::setValue(ExpNode* value){
     this->value = value;
 }
 
-VarDeclare::VarDeclare(std::string name ,PARSETYPE type,TAG datatype):SymDeclare(name,type){
-    this->datatype = datatype;
+VarDeclare::VarDeclare(std::string name ,PARSETYPE type,TAG datatype):SymDeclare(name,type,datatype){
 }
 
-VarDef::VarDef(std::string name ,PARSETYPE type,TAG datatype,ExpNode* value):SymDeclare(name,type){
+VarDef::VarDef(std::string name ,PARSETYPE type,TAG datatype,ExpNode* value):SymDeclare(name,type,datatype){
     setValue(value);
-    this->datatype = datatype;
 }
 
-FunDef::FunDef(std::string name ,PARSETYPE type,TAG retvalue):SymDeclare(name,type){
-    this->retValue = retvalue;
+FunDef::FunDef(std::string name ,PARSETYPE type,TAG retvalue):SymDeclare(name,type,retvalue){
 }
 
-FunDeclare::FunDeclare(std::string name ,PARSETYPE type):SymDeclare(name,type){
+void FunDef::sym_print(){
+    printf("function name:%s\n",getName().c_str());     //打印函数名
+   
+    map<std::string,SymDeclare*>* syms = paralist->getSyms();
+    size_t argc = 0;
+    for(map<std::string,SymDeclare*>::iterator it = syms->begin();it!=syms->end();it++){
+        switch (it->second->getDataType()){
+            case KW_INT:printf("%ld.Type: int\n",argc);break;       //打印函数参数类型
+            case KW_BOOL:printf("%ld.Type: bool\n",argc);break;
+            case KW_CHAR:printf("%ld.Type: char\n",argc);break;
+            case KW_VOID:printf("%ld.Type: void\n",argc);break;
+            case KW_FLOAT:printf("%ld.Type: float\n",argc);break;
+            default:break;
+        }
+        argc++;
+    }
+    printf("argc: %ld\n",argc);     //打印函数个数
     
+    switch (getDataType()) {
+        case KW_INT:printf("retValue Type: int\n");break;       //打印函数返回类型
+        case KW_BOOL:printf("retValue Type: bool\n");break;
+        case KW_CHAR:printf("retValue Type: char\n");break;
+        case KW_VOID:printf("retValue Type: void\n");break;
+        case KW_FLOAT:printf("retValue Type: float\n");break;
+        default:break;
+    }
 }
 
+void FunDeclare::sym_print(){
+    printf("function name:%s\n",getName().c_str());     //打印函数名
+   
+    map<std::string,SymDeclare*>* syms = paralist->getSyms();
+    size_t argc = 0;
+    for(map<std::string,SymDeclare*>::iterator it = syms->begin();it!=syms->end();it++){
+        switch (it->second->getDataType()) {
+            case KW_INT:printf("%ld.Type: int\n",argc);break;       //打印函数参数类型
+            case KW_BOOL:printf("%ld.Type: bool\n",argc);break;
+            case KW_CHAR:printf("%ld.Type: char\n",argc);break;
+            case KW_VOID:printf("%ld.Type: void\n",argc);break;
+            case KW_FLOAT:printf("%ld.Type: float\n",argc);break;
+            default:break;
+        }
+        argc++;
+    }
+    printf("argc: %ld\n",argc);     //打印函数个数
+    
+    switch (getDataType()) {
+        case KW_INT:printf("retValue Type: int\n");break;       //打印函数返回类型
+        case KW_BOOL:printf("retValue Type: bool\n");break;
+        case KW_CHAR:printf("retValue Type: char\n");break;
+        case KW_VOID:printf("retValue Type: void\n");break;
+        case KW_FLOAT:printf("retValue Type: float\n");break;
+        default:break;
+    }
+}
 
+FunDeclare::FunDeclare(std::string name ,PARSETYPE type,TAG retValue):SymDeclare(name,type,retValue){
+}
 
 size_t Label::labelNum = 0;
 

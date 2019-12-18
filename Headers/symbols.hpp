@@ -13,6 +13,8 @@
 #include <string>
 #include "Tokens.h"
 #include <vector>
+using std::vector;
+using std::map;
 
 enum PARSETYPE{
     VARDEFINE,VARDECLARE,
@@ -20,10 +22,12 @@ enum PARSETYPE{
 };
 
 class ExpNode;
+class Symbols;
 
 class SymDeclare{
 public:
     SymDeclare(){}
+    SymDeclare(const std::string name, PARSETYPE type,TAG datatype);
     SymDeclare(const std::string name, PARSETYPE type);
     virtual ~SymDeclare(){}
 private:
@@ -32,7 +36,10 @@ private:
 public:
     std::string getName();
     PARSETYPE getParseType();
+    TAG getDataType();
+    void setDataType(TAG datatype);
 private:
+    TAG datatype;
     std::string name;
     PARSETYPE parseType;
 };
@@ -44,9 +51,7 @@ public:
     ~VarDef(){}
 private:
     void setValue(ExpNode* value);
-private:
     ExpNode* value;
-    TAG datatype;
 };
 
 class VarDeclare: public SymDeclare{
@@ -54,8 +59,6 @@ public:
     VarDeclare(const std::string name, PARSETYPE type,TAG tag);
     VarDeclare(){}
     ~VarDeclare(){}
-private:
-    TAG datatype;
 };
 
 class FunDef: public SymDeclare{
@@ -64,20 +67,21 @@ public:
     FunDef(){}
     ~FunDef(){}
 public:
-    std::vector<VarDeclare*>* paralist;
-private:
-    TAG retValue;
+    void sym_print();
+public:
+    Symbols* paralist;
 };
 
 class FunDeclare: public SymDeclare{
 public:
-    FunDeclare(const std::string name,PARSETYPE type);
+    FunDeclare(const std::string name,PARSETYPE type,TAG retValue);
     FunDeclare(){}
     ~FunDeclare(){}
 public:
     bool checkRepeatDeclare();
+    void sym_print();
 public:
-    std::vector<VarDeclare*>* paralist;
+    Symbols* paralist;
 };
 
 class Label: public SymDeclare{
@@ -111,6 +115,7 @@ public:
 public:
     void insert(std::string sym_name,SymDeclare* data);
     SymDeclare* find(const std::string&);
+    std::map<std::string,SymDeclare*>* getSyms();
 private:
     std::map<std::string,SymDeclare*> syms;
 };

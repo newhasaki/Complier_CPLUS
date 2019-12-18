@@ -8,11 +8,11 @@
 
 #include "parse.hpp"
 
-
 Parse::Parse(vector<Token*>& tokens){
     mTokens = tokens;
     mindex = 0;
     curToken = tokens.at(mindex++);
+    curSymbol = new Symbols(); //创建符号表
 }
 
 void Parse::startParse(){
@@ -20,92 +20,142 @@ void Parse::startParse(){
 }
 
 void Parse::syn_program(){
-    vector<VarDeclare*>* vlist = new vector<VarDeclare*>();
-    syn_type(vlist);
-    
-    
+    syn_type();
 }
 
 /*
  
 
  */
-void Parse::syn_localvar(vector<VarDeclare*>* vlist,TAG datatype){
+void Parse::syn_localvar(TAG datatype){
     nextToken();
     while(curToken->getTag()!=SEMICON){
         if(match(ID)){
             Id* id = dynamic_cast<Id*>(curToken);
             nextToken();
             if(match(ASSIGN)){
-                if(match(ID)||match_const())
-                    syn_vardefine(vlist,id->getName(),datatype);
+                if(match(ID)||match_const()){
+                    SymDeclare* symbol = syn_vardefine(id->getName(),datatype);
+                    curSymbol->insert(id->getName(),symbol);
+                }
                 if(match(SEMICON))
                     break;
                 if(match(COMMA))
                     continue;
             }else if(match(SEMICON)){
-                syn_vardeclare(vlist,id->getName(),datatype);
+                SymDeclare* symbol = syn_vardeclare(id->getName(),datatype);
+                curSymbol->insert(id->getName(), symbol);
                 break;
             }else if(match(COMMA)){
-                syn_vardeclare(vlist,id->getName(),datatype);
+                SymDeclare* symbols = syn_vardeclare(id->getName(),datatype);
+                curSymbol->insert(id->getName(), symbols);
             }
         }
     }
 }
 
-void Parse::syn_type(vector<VarDeclare*>* vlist){
+void Parse::syn_type(){
+    TAG datatype = curToken->getTag();
     if(match_type()){
-        syn_id(vlist,curToken->getTag());
-    }else{
-        printf("ERROR\n");
+        syn_id(datatype);
     }
 }
 
-void Parse::syn_paralist(vector<VarDeclare*>* paralist){
-    syn_type(paralist);
+SymDeclare* Parse::syn_parameters(std::string varname,TAG datatype){
+    return syn_vardeclare(varname,datatype);
 }
 
-void Parse::syn_id(vector<VarDeclare*>* vlist,TAG datatype){
-    nextToken();
+SymDeclare* Parse::syn_parameters_init(std::string varname,TAG datatype){
+    return syn_vardefine(varname,datatype);
+}
+
+Symbols* Parse::syn_paralist(){
+    Symbols* paralist = new Symbols();
+    while(true){
+        TAG datatype = curToken->getTag();
+        if(match_type()){
+            if(match(ID)){
+                Id* id = dynamic_cast<Id*>(curToken);
+                SymDeclare* symbol = nullptr;
+                nextToken();
+                if(match(COMMA)){
+                    symbol = syn_parameters(id->getName(),datatype);
+                    paralist->insert(id->getName(), symbol);
+                }else if(match(RPAREN)){
+                    symbol = syn_parameters(id->getName(),datatype);
+                    paralist->insert(id->getName(),symbol);
+                    return paralist;
+                }else if(match(ASSIGN)){
+                    if(match_const()){
+                        symbol = syn_parameters_init(id->getName(),datatype);
+                        while(true){
+                            if(match(COMMA)){
+                                TAG datatype = curToken->getTag();
+                                if(match_type()){
+                                    if(match(ID)){
+                                        Id* id = dynamic_cast<Id*>(curToken);
+                                        if(match(ASSIGN)){
+                                            if(match_const()){
+                                                symbol = syn_parameters_init(id->getName(), datatype);
+                                                paralist->insert(id->getName(),symbol);        //参数值
+                                            }
+                                        }
+                                    }
+                                }
+                            }else if(match(RPAREN)){
+                                symbol = syn_parameters_init(id->getName(), datatype);
+                                paralist->insert(id->getName(),symbol);        //参数值
+                                return paralist;
+                            }
+                        }
+                    }
+                }
+            }else if(match(COMMA)){
+                VarDeclare* var_declare = new VarDeclare("undefine_varname",VARDECLARE,datatype);
+                paralist->insert("undefine_varname",var_declare);
+            }else if(match(RPAREN)){
+                return paralist;
+            }
+        }else{
+            printf("ERROR\n");
+        }
+    }
+    return nullptr;
+}
+    
+
+void Parse::syn_id(TAG datatype){
     if(curToken->getTag() == ID ){
-        
         Id* id = dynamic_cast<Id*>(curToken);
         nextToken();
         if(match(EQU)){
-            syn_vardefine(vlist,id->getName(),datatype);
+            syn_vardefine(id->getName(),datatype);
         }else if(match(LPAREN)){
-            
             printf("fun\n");
-            
-            vector<VarDeclare*>* paralist = new vector<VarDeclare*>();
-            syn_paralist(paralist);
-           
-            if (match(RPAREN)){
+            Symbols* paralist = syn_paralist();
+        
+            if(match(LBRACE)){
+                FunDef* fundef = new FunDef(id->getName(),FUNDEFINE,datatype);
+                fundef->paralist = paralist;
                 
-                if(match(LBRACE)){
-                    
-                    curSymbol = new vector<Symbols*>(); //创建符号表
-                    symbolStack.push_back(curSymbol);
-                    
-                    FunDef* fundef = new FunDef(id->getName(),FUNDEFINE,datatype);
-                    fundef->paralist = paralist;
-                    Symbols* symbols = new Symbols();
-                    symbols->insert(id->getName(), fundef);
-                    
-                    syn_block();
-                    if(match(RPAREN)){
-                                       
-                    }
-                }else if(match(SEMICON)){
-                   
-                    FunDeclare* fundeclare = new FunDeclare();
-                    fundeclare->paralist = paralist;
-                    
-                    Symbols* symbols = new Symbols();
-                    symbols->insert(id->getName(), fundeclare);
-                    
-                    printf("fun decal\n");
+                fundef->sym_print();    //打印函数定义信息
+                
+                curSymbol->insert(id->getName(),fundef);
+                symbolStack.push_back(curSymbol);
+                syn_block();
+                if(match(RPAREN)){
+                                   
                 }
+            }else if(match(SEMICON)){
+                FunDeclare* fundeclare = new FunDeclare(id->getName(),FUNDECLARE,datatype);
+                fundeclare->paralist = paralist;
+                
+                fundeclare->sym_print();    //打印函数声明信息
+                
+                Symbols* symbols = new Symbols();
+                symbols->insert(id->getName(), fundeclare);
+                
+                printf("fun decal\n");
             }
             
         }else{
@@ -114,14 +164,12 @@ void Parse::syn_id(vector<VarDeclare*>* vlist,TAG datatype){
             Symbols* symbols = new Symbols();
             symbols->insert(id->getName(),var_declare);     //加入当前符号表，因为参数也在当前作用域内
             
-            vlist->push_back(var_declare);     //参数列表
-            
             if(match(SEMICON))
                 printf("var def\n");
             else if(match(COMMA))
-                syn_id(vlist,datatype);
+                syn_id(datatype);
             else if(match(LPAREN)){
-                syn_type(vlist);
+                syn_type();
                 if(match(RPAREN)){
                     
                     if(match(SEMICON)){
@@ -146,22 +194,18 @@ void Parse::syn_id(vector<VarDeclare*>* vlist,TAG datatype){
 /*
  变量定义
  */
-void Parse::syn_vardefine(vector<VarDeclare*>* vlist,std::string varname,TAG datatype){
-        ExpNode* rootNode = syn_exp();
-        VarDef* var_define = new VarDef(varname, VARDEFINE,datatype,rootNode);
-        Symbols* symbol = new Symbols();
-        symbol->insert(varname,var_define);
-        curSymbol->push_back(symbol);
+SymDeclare* Parse::syn_vardefine(std::string varname,TAG datatype){
+    ExpNode* rootNode = syn_exp();
+    VarDef* var_define = new VarDef(varname, VARDEFINE,datatype,rootNode);
+    return var_define;
 }
 
 /*
 变量声明
 */
-void Parse::syn_vardeclare(vector<VarDeclare*>*,std::string varname,TAG datatype){
+SymDeclare* Parse::syn_vardeclare(std::string varname,TAG datatype){
     VarDeclare* var_declare = new VarDeclare(varname,VARDECLARE,datatype);
-    Symbols* symbol = new Symbols();
-    symbol->insert(varname, var_declare);
-    curSymbol->push_back(symbol);
+    return var_declare;
 }
 
 /*
@@ -184,10 +228,10 @@ void Parse::syn_ifstat(){
     
     if(match(LBRACE)){
         
-        curSymbol = new vector<Symbols*>(); //创建符号表
+        curSymbol = new Symbols(); //创建符号表
         symbolStack.push_back(curSymbol);
-        vector<VarDeclare*>* vlist = new vector<VarDeclare*>();
-        syn_statement(vlist);
+
+        syn_statement();
         if(!match(RBRACE)){
             printf("except }\n");
         }else{
@@ -200,8 +244,8 @@ void Parse::syn_ifstat(){
         }
     }
     else{
-        vector<VarDeclare*>* vlist = new vector<VarDeclare*>();
-        syn_statement(vlist);
+       
+        syn_statement();
         if(match(SEMICON))
             printf("if singel statement\n");
     }
@@ -350,13 +394,15 @@ ExpNode* Parse::syn_mul_div(){
 }
 
 void Parse::syn_block(){
-    vector<VarDeclare*>* vlist = new vector<VarDeclare*>();
+    
+    curSymbol = new Symbols(); //创建符号表
+    symbolStack.push_back(curSymbol);
     do{
-        syn_statement(vlist);
+        syn_statement();
     }while(curToken->getTag()!=RBRACE);
 }
 
-void Parse::syn_statement(vector<VarDeclare*>* vlist){
+void Parse::syn_statement(){
     
     switch (curToken->getTag()) {               //在函数体中中以数据类型开始的关键字只有变量定义和变量声明
        case KW_INT:
@@ -364,7 +410,7 @@ void Parse::syn_statement(vector<VarDeclare*>* vlist){
        case KW_VOID:
        case KW_CHAR:
        case KW_BOOL:
-           syn_localvar(vlist,curToken->getTag());
+           syn_localvar(curToken->getTag());
            break;
        case KW_IF:
            syn_ifstat();
@@ -410,6 +456,7 @@ bool Parse::match_type(){
     if(curToken->getTag()==KW_INT||curToken->getTag()== KW_FLOAT
           ||curToken->getTag()== KW_VOID||curToken->getTag()== KW_BOOL
           ||curToken->getTag()== KW_CHAR||curToken->getTag()){
+           nextToken();
            return true;
        }
        return false;
@@ -442,31 +489,5 @@ void Parse::add_type_value(VarDataDef* vdd){
 }
 
 bool Parse::checkRepeatFunDeclare(SymDeclare* sym){
-
-    vector<Symbols*> symbols = (*symbolStack.at(0));
-    for(vector<Symbols*>::iterator it = symbols.begin();it!=symbols.end();it++){
-        SymDeclare* symdeclare = (*it)->find(sym->getName());
-        if(symdeclare!=nullptr){
-            FunDeclare* sym_fundeclare = dynamic_cast<FunDeclare*>(symdeclare);
-            size_t sym_paraCount = sym_fundeclare->paralist->size();
-            FunDeclare* fundeclare = dynamic_cast<FunDeclare*>(sym);
-            size_t cur_paraCount = fundeclare->paralist->size();
-            if(sym_paraCount == cur_paraCount){
-                printf("参数个数相同\n");
-                bool checktype = false;
-                for(size_t i = 0;i<cur_paraCount;++i){
-                    if(fundeclare->paralist->at(i)->getParseType() == sym_fundeclare->paralist->at(i)->getParseType()){
-                        checktype = true;
-                    }
-                }
-                
-                if(checktype){
-                    printf("参数类型符合!");
-                    return true;
-                }
-            }
-            
-        }
-    }
-    return false;
+    return true;
 }
