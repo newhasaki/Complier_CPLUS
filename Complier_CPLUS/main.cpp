@@ -14,9 +14,9 @@ int main(int argc, const char * argv[]) {
     Scan scan;
     scan.readFile("/Users/mac/Desktop/testbuild/test.c");
     vector<Token*> tokens = scan.startScan();
-//    for(Token* p:tokens){
-//        p->toPrintf();
-//    }
+    
+    Token* endToken = new  Token(ERR);
+    tokens.push_back(endToken);
     
     Parse parse(tokens);
     parse.startParse();

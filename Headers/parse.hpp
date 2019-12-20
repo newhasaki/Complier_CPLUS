@@ -34,7 +34,7 @@ private:
     SymDeclare* syn_vardefine(std::string varname,TAG datatype);
     SymDeclare* syn_vardeclare(std::string varname,TAG datatype);
     void syn_datalist();
-    void syn_ifstat();
+    void syn_if_else_stat();
     ExpNode* syn_exp();
     void syn_block();
     ExpNode* syn_bool_or();
@@ -52,6 +52,7 @@ private:
 private:
     void nextToken();
 private:
+    vector<SymDeclare*> symDeclares;
     vector<Token*> mTokens;
     Token* curToken;
     size_t mindex;              //向前看指针

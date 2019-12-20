@@ -87,6 +87,7 @@ public:
 class Label: public SymDeclare{
 public:
     Label();
+    Label(PARSETYPE);
     ~Label(){}
 private:
     size_t getLable();
@@ -107,6 +108,16 @@ private:
     Label* gotolabel;
 };
 
+class ElseStat: public SymDeclare{
+public:
+    ElseStat(){}
+    ~ElseStat(){}
+public:
+    void setGotoLabel(Label* label);
+private:
+    ExpNode* exp;
+    Label* gotolabel;
+};
 
 class Symbols{
 public:

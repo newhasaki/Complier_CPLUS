@@ -20,12 +20,13 @@ void Parse::startParse(){
 }
 
 void Parse::syn_program(){
-    syn_type();
+    while(curToken->getTag()!=ERR){
+        syn_type();
+    }
 }
 
 /*
  
-
  */
 void Parse::syn_localvar(TAG datatype){
     nextToken();
@@ -37,6 +38,7 @@ void Parse::syn_localvar(TAG datatype){
                 if(match(ID)||match_const()){
                     SymDeclare* symbol = syn_vardefine(id->getName(),datatype);
                     curSymbol->insert(id->getName(),symbol);
+                    symDeclares.push_back(symbol);
                 }
                 if(match(SEMICON))
                     break;
@@ -45,10 +47,12 @@ void Parse::syn_localvar(TAG datatype){
             }else if(match(SEMICON)){
                 SymDeclare* symbol = syn_vardeclare(id->getName(),datatype);
                 curSymbol->insert(id->getName(), symbol);
+                symDeclares.push_back(symbol);
                 break;
             }else if(match(COMMA)){
-                SymDeclare* symbols = syn_vardeclare(id->getName(),datatype);
-                curSymbol->insert(id->getName(), symbols);
+                SymDeclare* symbol = syn_vardeclare(id->getName(),datatype);
+                curSymbol->insert(id->getName(), symbol);
+                symDeclares.push_back(symbol);
             }
         }
     }
@@ -123,7 +127,6 @@ Symbols* Parse::syn_paralist(){
     return nullptr;
 }
     
-
 void Parse::syn_id(TAG datatype){
     if(curToken->getTag() == ID ){
         Id* id = dynamic_cast<Id*>(curToken);
@@ -131,30 +134,28 @@ void Parse::syn_id(TAG datatype){
         if(match(EQU)){
             syn_vardefine(id->getName(),datatype);
         }else if(match(LPAREN)){
-            printf("fun\n");
             Symbols* paralist = syn_paralist();
-        
+            
             if(match(LBRACE)){
-                FunDef* fundef = new FunDef(id->getName(),FUNDEFINE,datatype);
+                FunDef* fundef = new FunDef(id->getName(),FUNDEFINE,datatype);  //函数定义
                 fundef->paralist = paralist;
                 
                 fundef->sym_print();    //打印函数定义信息
                 
                 curSymbol->insert(id->getName(),fundef);
+                symDeclares.push_back(fundef);
                 symbolStack.push_back(curSymbol);
+                
                 syn_block();
-                if(match(RPAREN)){
-                                   
-                }
+                
             }else if(match(SEMICON)){
-                FunDeclare* fundeclare = new FunDeclare(id->getName(),FUNDECLARE,datatype);
+                FunDeclare* fundeclare = new FunDeclare(id->getName(),FUNDECLARE,datatype); //函数声明
                 fundeclare->paralist = paralist;
                 
                 fundeclare->sym_print();    //打印函数声明信息
-                
-                Symbols* symbols = new Symbols();
-                symbols->insert(id->getName(), fundeclare);
-                
+
+                curSymbol->insert(id->getName(), fundeclare);
+                symDeclares.push_back(fundeclare);
                 printf("fun decal\n");
             }
             
@@ -163,7 +164,7 @@ void Parse::syn_id(TAG datatype){
             VarDeclare* var_declare  = new VarDeclare(id->getName(),VARDECLARE,datatype);
             Symbols* symbols = new Symbols();
             symbols->insert(id->getName(),var_declare);     //加入当前符号表，因为参数也在当前作用域内
-            
+            symDeclares.push_back(var_declare);
             if(match(SEMICON))
                 printf("var def\n");
             else if(match(COMMA))
@@ -210,21 +211,39 @@ SymDeclare* Parse::syn_vardeclare(std::string varname,TAG datatype){
 
 /*
     if else语句
+    if(){
+ 
+    }
+    first_label
+ 
+    if(){
+        goto first_label
+    }else{
+        second_label
+    }
+    first_label
 */
-void Parse::syn_ifstat(){
-    if(!match(LPAREN))
+void Parse::syn_if_else_stat(){
+    nextToken();
+    if(match(LPAREN)){
+        
+    }else{
         printf("except (\n");
-    
-    syn_exp();
-    
-    Label* label = new Label();
+    }
+        
+    Label* first_label = new Label();
     
     IfStat* ifstat = new IfStat();
-    ifstat->setGotoLabel(label);
-    ifstat->setExp(syn_bool_exp());
-                    
-    if(!match(RPAREN))
+    ifstat->setGotoLabel(first_label);
+    ifstat->setExp(syn_exp());
+    symDeclares.push_back(ifstat);
+    
+    if(match(RPAREN))
+    {
+        
+    }else{
         printf("except )\n");
+    }
     
     if(match(LBRACE)){
         
@@ -232,24 +251,48 @@ void Parse::syn_ifstat(){
         symbolStack.push_back(curSymbol);
 
         syn_statement();
-        if(!match(RBRACE)){
-            printf("except }\n");
-        }else{
+        if(match(RBRACE)){
+            symbolStack.pop_back();     //离开if语句
             
+        }else{
+            printf("except }\n");
         }
         
-        //if else
+        
+        //else
         if(match(KW_ELSE)){
+            ElseStat* elsestat = new ElseStat();
+            elsestat->setGotoLabel(first_label);
+            symDeclares.push_back(elsestat);
             
+            Label* second_label = new Label();
+            ifstat->setGotoLabel(second_label);
+            symDeclares.push_back(second_label);
+            
+                if(match(LBRACE)){
+                    syn_statement();
+                    if(match(RBRACE)){
+                        symDeclares.push_back(first_label);
+                    }
+                }
+        }else{
+             symDeclares.push_back(first_label);   //记录标签
         }
     }
     else{
-       
+        /*
+         if(boolexp):
+            i = 1;
+         else
+            i = 0;
+         */
         syn_statement();
         if(match(SEMICON))
             printf("if singel statement\n");
     }
 }
+
+
 
 ExpNode* Parse::syn_exp(){
     return syn_bool_exp();
@@ -413,7 +456,7 @@ void Parse::syn_statement(){
            syn_localvar(curToken->getTag());
            break;
        case KW_IF:
-           syn_ifstat();
+           syn_if_else_stat();
            break;
        case KW_SWITCH:
            break;
@@ -461,7 +504,6 @@ bool Parse::match_type(){
        }
        return false;
 }
-
 
 void Parse::nextToken(){
     curToken = mTokens.at(mindex++);

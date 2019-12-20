@@ -152,6 +152,7 @@ Label::Label():SymDeclare("LABEL", LABEL){
     labelNum++;
 }
 
+
 size_t Label::getLable(){
     return curLabel;
 }
@@ -163,7 +164,22 @@ void IfStat::setGotoLabel(Label* label){
 void IfStat::setExp(ExpNode* exp){
     this->exp = exp;
 }
+/*
+ class ElseStat: public SymDeclare{
+ public:
+     ElseStat(){}
+     ~ElseStat(){}
+ public:
+     void setGotoLabel(Label* label);
+ private:
+     ExpNode* exp;
+     Label* gotolabel;
+ }
+ */
 
+void ElseStat::setGotoLabel(Label *label){
+    this->gotolabel = label;
+}
 
 TAG ExpNode::getNodeType(){
     return nodetype;
