@@ -30,8 +30,6 @@ TAG Token::getTag(){
 }
 
 
-
-
 //enum TAG{ERR,
 //    END,
 //    ID,

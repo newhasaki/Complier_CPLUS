@@ -36,23 +36,35 @@ void Parse::syn_localvar(TAG datatype){
             nextToken();
             if(match(ASSIGN)){
                 if(match(ID)||match_const()){
-                    SymDeclare* symbol = syn_vardefine(id->getName(),datatype);
-                    curSymbol->insert(id->getName(),symbol);
-                    symDeclares.push_back(symbol);
+                    if(!syn_isRedefinition(id->getName())){     //检测变量是否重定义
+                        SymDeclare* symbol = syn_vardefine(id->getName(),datatype);
+                        curSymbol->insert(id->getName(),symbol);
+                        symDeclares.push_back(symbol);
+                    }else{
+                        printf("%s is Redefinition\n",id->getName().c_str());
+                    }
                 }
                 if(match(SEMICON))
                     break;
                 if(match(COMMA))
                     continue;
             }else if(match(SEMICON)){
-                SymDeclare* symbol = syn_vardeclare(id->getName(),datatype);
-                curSymbol->insert(id->getName(), symbol);
-                symDeclares.push_back(symbol);
+                if(!syn_isRedefinition(id->getName())){
+                    SymDeclare* symbol = syn_vardeclare(id->getName(),datatype);
+                    curSymbol->insert(id->getName(), symbol);
+                    symDeclares.push_back(symbol);
+                }else{
+                    printf("%s is Redefinition\n",id->getName().c_str());
+                }
                 break;
             }else if(match(COMMA)){
-                SymDeclare* symbol = syn_vardeclare(id->getName(),datatype);
-                curSymbol->insert(id->getName(), symbol);
-                symDeclares.push_back(symbol);
+                if(!syn_isRedefinition(id->getName())){
+                    SymDeclare* symbol = syn_vardeclare(id->getName(),datatype);
+                    curSymbol->insert(id->getName(), symbol);
+                    symDeclares.push_back(symbol);
+                }else{
+                    printf("%s is Redefinition\n",id->getName().c_str());
+                }
             }
         }
     }
@@ -126,7 +138,9 @@ Symbols* Parse::syn_paralist(){
     }
     return nullptr;
 }
-    
+
+
+
 void Parse::syn_id(TAG datatype){
     if(curToken->getTag() == ID ){
         Id* id = dynamic_cast<Id*>(curToken);
@@ -137,26 +151,20 @@ void Parse::syn_id(TAG datatype){
             Symbols* paralist = syn_paralist();
             
             if(match(LBRACE)){
-                FunDef* fundef = new FunDef(id->getName(),FUNDEFINE,datatype);  //函数定义
-                fundef->paralist = paralist;
-                
+                FunDef* fundef = syn_fundef(id->getName(),datatype,paralist);
                 fundef->sym_print();    //打印函数定义信息
-                
                 curSymbol->insert(id->getName(),fundef);
                 symDeclares.push_back(fundef);
-                symbolStack.push_back(curSymbol);
-                
+        
+                ready_entry_funblock(paralist);     //将函数参数加入当前作用域符号表
                 syn_block();
+                ready_leave_funblock();
                 
             }else if(match(SEMICON)){
-                FunDeclare* fundeclare = new FunDeclare(id->getName(),FUNDECLARE,datatype); //函数声明
-                fundeclare->paralist = paralist;
-                
+                FunDeclare* fundeclare = syn_fundeclare(id->getName(), datatype, paralist);
                 fundeclare->sym_print();    //打印函数声明信息
-
                 curSymbol->insert(id->getName(), fundeclare);
                 symDeclares.push_back(fundeclare);
-                printf("fun decal\n");
             }
             
         }else{
@@ -223,6 +231,7 @@ SymDeclare* Parse::syn_vardeclare(std::string varname,TAG datatype){
     }
     first_label
 */
+
 void Parse::syn_if_else_stat(){
     nextToken();
     if(match(LPAREN)){
@@ -257,7 +266,6 @@ void Parse::syn_if_else_stat(){
         }else{
             printf("except }\n");
         }
-        
         
         //else
         if(match(KW_ELSE)){
@@ -436,13 +444,42 @@ ExpNode* Parse::syn_mul_div(){
     return md_node;
 }
 
-void Parse::syn_block(){
-    
+void Parse::ready_entry_funblock(Symbols* paralist){
     curSymbol = new Symbols(); //创建符号表
+    
+    map<string,SymDeclare*>* parainfo =  paralist->getSyms();
+    for(map<string,SymDeclare*>::iterator it = parainfo->begin();it!=parainfo->end();it++){
+        curSymbol->insert(it->first, it->second);
+    }
     symbolStack.push_back(curSymbol);
+}
+
+void Parse::syn_block(){
     do{
         syn_statement();
-    }while(curToken->getTag()!=RBRACE);
+    }while(!match(RBRACE));
+}
+
+void Parse::ready_leave_funblock(){
+    curSymbol = symbolStack.at(symbolStack.size() - 1);
+    symbolStack.pop_back();
+}
+
+/*
+ void syn_fundef();      //函数定义
+ void syn_fundeclare();  //函数声明
+*/
+
+FunDef* Parse::syn_fundef(string name,TAG datatype,Symbols* paralist){
+    FunDef* fundef = new FunDef(name,FUNDEFINE,datatype);  //函数定义
+    fundef->paralist = paralist;
+    return fundef;
+}
+
+FunDeclare*  Parse::syn_fundeclare(string name, TAG datatype,Symbols* paralist){
+    FunDeclare* fundeclare = new FunDeclare(name,FUNDECLARE,datatype); //函数声明
+    fundeclare->paralist = paralist;
+    return fundeclare;
 }
 
 void Parse::syn_statement(){
@@ -456,21 +493,43 @@ void Parse::syn_statement(){
            syn_localvar(curToken->getTag());
            break;
        case KW_IF:
-           syn_if_else_stat();
-           break;
-       case KW_SWITCH:
-           break;
-       case KW_DO:
-           break;
-       case KW_FOR:
-           break;
-       case KW_WHILE:
-           break;
-       case KW_RETURN:
-           break;
+           syn_if_else_stat();break;
+       case KW_SWITCH:break;
+       case KW_DO:break;
+       case KW_FOR:break;
+       case KW_WHILE:break;
+       case KW_RETURN:break;
        default:
            break;
    }
+    
+    if(match(ID)){
+        
+        if(match(LPAREN)){
+            //函数调用
+        }else if(match(ASSIGN)){
+            //变量调用
+            
+        }
+    }
+    
+}
+
+
+bool Parse::syn_varcheck(){
+    return true;
+}
+
+bool Parse::syn_funcheck(){
+    return true;
+}
+
+bool Parse::syn_symbols_check(const std::string& name,PARSETYPE parsetype){
+    return true;
+}
+
+bool Parse::syn_isRedefinition(const string& name){
+    return curSymbol->find(name)==nullptr?false:true;
 }
 
 bool Parse::match(TAG tag){

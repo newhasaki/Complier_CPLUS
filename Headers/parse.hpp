@@ -24,19 +24,26 @@ private:
     void syn_localvar(TAG datatype);//变量定义
     void syn_type();
     void syn_id(TAG datatype);
-    void syn_fundef();      //函数定义
-    void syn_fundeclare();  //函数声明
+    FunDef*  syn_fundef(string name,TAG datatype,Symbols* paralist);      //函数定义
+    FunDeclare*  syn_fundeclare(string name,TAG datatype,Symbols* paralist);  //函数声明
     void syn_statement();   //函数体;
     void syn_program();
     Symbols* syn_paralist();
-    SymDeclare* syn_parameters(std::string varname,TAG datatype);
-    SymDeclare* syn_parameters_init(std::string varname,TAG datatype);
-    SymDeclare* syn_vardefine(std::string varname,TAG datatype);
-    SymDeclare* syn_vardeclare(std::string varname,TAG datatype);
+    SymDeclare* syn_parameters(string varname,TAG datatype);
+    SymDeclare* syn_parameters_init(string varname,TAG datatype);
+    SymDeclare* syn_vardefine(string varname,TAG datatype);
+    SymDeclare* syn_vardeclare(string varname,TAG datatype);
     void syn_datalist();
     void syn_if_else_stat();
     ExpNode* syn_exp();
+    void ready_entry_funblock(Symbols* paralist);
     void syn_block();
+    void ready_leave_funblock();
+    bool syn_isRedefinition(const string& name);
+    bool syn_symbols_check(const string& name,PARSETYPE parsetype);
+    bool syn_varcheck();
+    bool syn_funcheck();
+    
     ExpNode* syn_bool_or();
     ExpNode* syn_bool_and();
     ExpNode* syn_bool_compare();

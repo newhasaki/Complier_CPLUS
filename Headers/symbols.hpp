@@ -15,6 +15,7 @@
 #include <vector>
 using std::vector;
 using std::map;
+using std::string;
 
 enum PARSETYPE{
     VARDEFINE,VARDECLARE,
@@ -63,7 +64,7 @@ public:
 
 class FunDef: public SymDeclare{
 public:
-    FunDef(const std::string name,PARSETYPE type,TAG retvalue);
+    FunDef(string name,PARSETYPE type,TAG retvalue);
     FunDef(){}
     ~FunDef(){}
 public:
@@ -124,11 +125,11 @@ public:
     Symbols(){}
     ~Symbols();
 public:
-    void insert(std::string sym_name,SymDeclare* data);
-    SymDeclare* find(const std::string&);
-    std::map<std::string,SymDeclare*>* getSyms();
+    void insert(string sym_name,SymDeclare* data);
+    SymDeclare* find(const string&);
+    map<string,SymDeclare*>* getSyms();
 private:
-    std::map<std::string,SymDeclare*> syms;
+    map<string,SymDeclare*> syms;
 };
 
 
@@ -144,7 +145,7 @@ public:
     void setNodeType(TAG tag);
     TAG getNodeType();
     void setValue(VarDataDef value);
-    void setVarName(std::string str);
+    void setVarName(string str);
     void createParentNode(ExpNode* left,ExpNode* right,TAG tag);
 private:
     VarDataDef value;

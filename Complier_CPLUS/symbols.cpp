@@ -79,11 +79,11 @@ void VarDef::setValue(ExpNode* value){
 VarDeclare::VarDeclare(std::string name ,PARSETYPE type,TAG datatype):SymDeclare(name,type,datatype){
 }
 
-VarDef::VarDef(std::string name ,PARSETYPE type,TAG datatype,ExpNode* value):SymDeclare(name,type,datatype){
+VarDef::VarDef(string name ,PARSETYPE type,TAG datatype,ExpNode* value):SymDeclare(name,type,datatype){
     setValue(value);
 }
 
-FunDef::FunDef(std::string name ,PARSETYPE type,TAG retvalue):SymDeclare(name,type,retvalue){
+FunDef::FunDef(string name ,PARSETYPE type,TAG retvalue):SymDeclare(name,type,retvalue){
 }
 
 void FunDef::sym_print(){
