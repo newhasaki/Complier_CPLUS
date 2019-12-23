@@ -8,7 +8,7 @@
 #include "symbols.hpp"
 
 Symbols::~Symbols(){
-    for(std::map<std::string,SymDeclare*>::iterator it; it!=syms.end();++it){
+    for(unordered_map<std::string,SymDeclare*>::iterator it; it!=syms.end();++it){
         delete it->second;
         it->second = nullptr;
     }
@@ -33,7 +33,7 @@ SymDeclare* Symbols::find(const std::string& name){
     return nullptr;
 }
 
-std::map<std::string,SymDeclare*>* Symbols::getSyms(){
+unordered_map<std::string,SymDeclare*>* Symbols::getSyms(){
     return &syms;
 }
 
@@ -76,23 +76,31 @@ void VarDef::setValue(ExpNode* value){
     this->value = value;
 }
 
-VarDeclare::VarDeclare(std::string name ,PARSETYPE type,TAG datatype):SymDeclare(name,type,datatype){
+ExpNode* VarDef::getValue(){
+    return value;
 }
 
 VarDef::VarDef(string name ,PARSETYPE type,TAG datatype,ExpNode* value):SymDeclare(name,type,datatype){
     setValue(value);
 }
 
-FunDef::FunDef(string name ,PARSETYPE type,TAG retvalue):SymDeclare(name,type,retvalue){
+vector<SymDeclare*>* Fun::getParaInfo(){
+//    vector<SymDeclare*> paraInfos;
+//    unordered_map<std::string,SymDeclare*>* parainfo = this->paralist->getSyms();
+//    for(unordered_map<string,SymDeclare*>::iterator it = parainfo->begin();it!=parainfo->end();it++){
+//        paraInfos.push_back(it->second);
+//    }
+    
+    return paralist;
 }
 
-void FunDef::sym_print(){
+void Fun::sym_print(){
     printf("function name:%s\n",getName().c_str());     //打印函数名
    
-    map<std::string,SymDeclare*>* syms = paralist->getSyms();
     size_t argc = 0;
-    for(map<std::string,SymDeclare*>::iterator it = syms->begin();it!=syms->end();it++){
-        switch (it->second->getDataType()){
+    for(vector<SymDeclare*>::iterator it=paralist->begin(); it!=paralist->end();++it){
+    
+        switch ((*it)->getDataType()){
             case KW_INT:printf("%ld.Type: int\n",argc);break;       //打印函数参数类型
             case KW_BOOL:printf("%ld.Type: bool\n",argc);break;
             case KW_CHAR:printf("%ld.Type: char\n",argc);break;
@@ -114,36 +122,26 @@ void FunDef::sym_print(){
     }
 }
 
-void FunDeclare::sym_print(){
-    printf("function name:%s\n",getName().c_str());     //打印函数名
-   
-    map<std::string,SymDeclare*>* syms = paralist->getSyms();
-    size_t argc = 0;
-    for(map<std::string,SymDeclare*>::iterator it = syms->begin();it!=syms->end();it++){
-        switch (it->second->getDataType()) {
-            case KW_INT:printf("%ld.Type: int\n",argc);break;       //打印函数参数类型
-            case KW_BOOL:printf("%ld.Type: bool\n",argc);break;
-            case KW_CHAR:printf("%ld.Type: char\n",argc);break;
-            case KW_VOID:printf("%ld.Type: void\n",argc);break;
-            case KW_FLOAT:printf("%ld.Type: float\n",argc);break;
-            default:break;
-        }
-        argc++;
-    }
-    printf("argc: %ld\n",argc);     //打印函数个数
-    
-    switch (getDataType()) {
-        case KW_INT:printf("retValue Type: int\n");break;       //打印函数返回类型
-        case KW_BOOL:printf("retValue Type: bool\n");break;
-        case KW_CHAR:printf("retValue Type: char\n");break;
-        case KW_VOID:printf("retValue Type: void\n");break;
-        case KW_FLOAT:printf("retValue Type: float\n");break;
-        default:break;
-    }
+Fun::Fun(const string name,PARSETYPE type,TAG retvalue):SymDeclare(name,type,retvalue){
 }
 
-FunDeclare::FunDeclare(std::string name ,PARSETYPE type,TAG retValue):SymDeclare(name,type,retValue){
+FunDef::FunDef(const string name ,PARSETYPE type,TAG retvalue):Fun(name,type,retvalue){
 }
+
+FunDeclare::FunDeclare(const string name ,PARSETYPE type,TAG retValue):Fun(name,type,retValue){
+}
+
+FunCall::FunCall(const string name,PARSETYPE type,TAG retValue):Fun(name,type,retValue){
+}
+
+VarCall::VarCall(const string name,PARSETYPE type,TAG datatype,ExpNode* value):SymDeclare(name,type,datatype){
+    setValue(value);
+}
+
+void VarCall::setValue(ExpNode *value){
+    this->value = value;
+}
+
 
 size_t Label::labelNum = 0;
 
@@ -151,7 +149,6 @@ Label::Label():SymDeclare("LABEL", LABEL){
     curLabel = labelNum;
     labelNum++;
 }
-
 
 size_t Label::getLable(){
     return curLabel;

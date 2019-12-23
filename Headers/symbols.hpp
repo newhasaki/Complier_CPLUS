@@ -9,21 +9,26 @@
 #ifndef symbols_hpp
 #define symbols_hpp
 
-#include <map>
+#include <unordered_map>
 #include <string>
 #include "Tokens.h"
 #include <vector>
+
+
 using std::vector;
-using std::map;
+using std::unordered_map;
 using std::string;
 
 enum PARSETYPE{
-    VARDEFINE,VARDECLARE,
-    FUNDEFINE,FUNDECLARE,LABEL
+    VARDEFINE,VARDECLARE,VARCALL,
+    FUNDEFINE,FUNDECLARE,FUNCALL,
+    LABEL
 };
 
 class ExpNode;
 class Symbols;
+class ParaList;
+class IfStat;
 
 class SymDeclare{
 public:
@@ -47,43 +52,68 @@ private:
 
 class VarDef: public SymDeclare{
 public:
-    VarDef(const std::string name, PARSETYPE type,TAG datatype,ExpNode* value);
+    VarDef(const string name, PARSETYPE type,TAG datatype,ExpNode* value);
     VarDef(){}
     ~VarDef(){}
+public:
+    ExpNode* getValue();
 private:
     void setValue(ExpNode* value);
     ExpNode* value;
 };
 
-class VarDeclare: public SymDeclare{
+//class VarDeclare: public SymDeclare{
+//public:
+//    VarDeclare(const string name, PARSETYPE type,TAG tag);
+//    VarDeclare(){}
+//    ~VarDeclare(){}
+//};
+
+class Fun: public SymDeclare{
 public:
-    VarDeclare(const std::string name, PARSETYPE type,TAG tag);
-    VarDeclare(){}
-    ~VarDeclare(){}
+    Fun(const string name,PARSETYPE type,TAG retvalue);
+    Fun(){}
+    ~Fun(){}
+public:
+    void sym_print();
+    vector<SymDeclare*>* getParaInfo();
+public:
+    vector<SymDeclare*>* paralist;
 };
 
-class FunDef: public SymDeclare{
+class FunDef: public Fun{
 public:
-    FunDef(string name,PARSETYPE type,TAG retvalue);
+    FunDef(const string name,PARSETYPE type,TAG retvalue);
     FunDef(){}
     ~FunDef(){}
-public:
-    void sym_print();
-public:
-    Symbols* paralist;
+
 };
 
-class FunDeclare: public SymDeclare{
+class FunDeclare: public Fun{
 public:
-    FunDeclare(const std::string name,PARSETYPE type,TAG retValue);
+    FunDeclare(const string name,PARSETYPE type,TAG retValue);
     FunDeclare(){}
     ~FunDeclare(){}
-public:
-    bool checkRepeatDeclare();
-    void sym_print();
-public:
-    Symbols* paralist;
 };
+
+class FunCall:public Fun{
+public:
+    FunCall(const string name,PARSETYPE type,TAG retValue);
+    FunCall(){}
+    ~FunCall(){}
+};
+
+class VarCall: public SymDeclare{
+public:
+    VarCall(const string name,PARSETYPE type,TAG datatype,ExpNode* value);
+    VarCall(){}
+    ~VarCall(){}
+private:
+    void setValue(ExpNode* value);
+private:
+    ExpNode* value;
+};
+
 
 class Label: public SymDeclare{
 public:
@@ -95,6 +125,14 @@ private:
 private:
     size_t curLabel;
     static size_t labelNum;
+};
+
+class DoWhile:public SymDeclare{
+public:
+    DoWhile(){}
+    ~DoWhile(){}
+private:
+    IfStat* determine;
 };
 
 class IfStat: public SymDeclare{
@@ -127,10 +165,11 @@ public:
 public:
     void insert(string sym_name,SymDeclare* data);
     SymDeclare* find(const string&);
-    map<string,SymDeclare*>* getSyms();
+    unordered_map<string,SymDeclare*>* getSyms();
 private:
-    map<string,SymDeclare*> syms;
+    unordered_map<string,SymDeclare*> syms;
 };
+
 
 
 class ExpNode{

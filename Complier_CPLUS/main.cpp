@@ -21,6 +21,5 @@ int main(int argc, const char * argv[]) {
     Parse parse(tokens);
     parse.startParse();
     
-    
     return 0;
 }   
