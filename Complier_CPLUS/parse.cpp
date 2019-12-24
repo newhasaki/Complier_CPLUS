@@ -155,6 +155,9 @@ void Parse::syn_id(TAG datatype){
                     ready_entry_funblock(paralist);     //将函数参数加入当前作用域符号表
                     syn_block();
                     ready_leave_funblock();
+                    curFunEndLabel = new Label();
+                    symDeclares.push_back(curFunEndLabel);
+                    
                 }else{
                     printf("%s is Redefinition\n",id->getName().c_str());
                 }
@@ -231,19 +234,81 @@ VarDef* Parse::syn_vardeclare(std::string varname,TAG datatype){
     first_label
 */
 
+void Parse::syn_case(){
+    if(!while_switch_Stacks.empty()){
+        SymDeclare* symdeclare = while_switch_Stacks.at(while_switch_Stacks.size()-1);
+        if(symdeclare->getParseType() == SWITCHDECLARE){
+        Switch* sch = dynamic_cast<Switch*>(symdeclare);
+            if(match_const()){
+                NUM* num = dynamic_cast<NUM*>(curToken);
+                if(match(COLON)){
+                    Label* label = new Label();
+                    if(sch->caseTab.find(num->getInt())==sch->caseTab.end()){
+                        sch->caseTab.insert(std::make_pair(num->getInt(),label));
+                    }else{
+                        printf("case redefinition\n");
+                    }
+                    if(match(LBRACE)){
+                        entry_block();
+                        syn_block();
+                        leave_block();
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Parse::syn_switch(){
+    
+    Switch* sch = new Switch();
+    while_switch_Stacks.push_back(sch);
+    Label* endLabel = new Label();
+    
+    if(match(LPAREN)){
+        
+    }
+    
+    syn_exp();
+    
+    if(match(RPAREN)){
+        
+    }
+    
+    if(match(LBRACE)){
+        
+    }
+    entry_block();
+    syn_block();
+    leave_block();
+    
+    symDeclares.push_back(endLabel);
+}
+
 void Parse::syn_do_while(){
     nextToken();
     if(match(KW_DO)){
+        
+        Label* headLabel = new Label();
+        Label* endLabel = new Label();
+        
+        symDeclares.push_back(headLabel);
+        
+        DoWhile* dowhile = new DoWhile();
+        while_switch_Stacks.push_back(dowhile);
+        
         if(match(LBRACE)){
             entry_block();
             syn_block();
             entry_block();
             if(match(KW_WHILE)){
-               
+                dowhile->setExp(syn_exp());
+                dowhile->setGotoHeadLabel(headLabel);
+                symDeclares.push_back(endLabel);
             }
             
             if(match(LPAREN)){
-                syn_exp();
+               
             }
             
             if(match(RPAREN)){
@@ -317,8 +382,6 @@ void Parse::syn_if_else_stat(){
             printf("if singel statement\n");
     }
 }
-
-
 
 ExpNode* Parse::syn_exp(){
     return syn_bool_exp();
@@ -488,6 +551,7 @@ void Parse::entry_block(){
 void Parse::leave_block(){
     symbolStack.pop_back();
     curSymbol = symbolStack.at(symbolStack.size()-1);
+   
 }
 
 void Parse::syn_block(){
@@ -522,9 +586,53 @@ FunCall* Parse::syn_funcall(string name,TAG datatype,vector<SymDeclare*>* parali
     funcall->paralist = paralist;
     return funcall;
 }
-void Parse::syn_genDoWhile(){
-    Label* label = new Label();
-    DoWhile* doWhile = new DoWhile();
+
+DoWhile* Parse::syn_genDoWhile(){
+//    Label* label = new Label();
+//
+//    DoWhile* doWhile = new DoWhile();
+//    symDeclares.push_back(doWhile);
+    return nullptr;
+}
+
+void Parse::syn_genReturn(){
+    Return* retObject = new Return();
+    retObject->setRetValue(syn_exp());
+    retObject->setGotoEndLabel(curFunEndLabel);
+}
+
+void Parse::syn_genBreak(){
+    if(!while_switch_Stacks.empty()){
+        SymDeclare* symdeclare = while_switch_Stacks.at(while_switch_Stacks.size()-1);
+        Break* brk = new Break();
+        if(symdeclare->getParseType() == DOWHILE){
+            DoWhile* dowhile = dynamic_cast<DoWhile*>(symdeclare);
+            brk->setGotoEndLabel(dowhile->getEndLabel());
+        }else if(symdeclare->getParseType() == CASEDECLARE){
+            Switch* sch = dynamic_cast<Switch*>(symdeclare);
+            brk->setGotoEndLabel(sch->getGotoEndLabel());
+        }
+        symDeclares.push_back(brk);
+    }else{
+        printf("break not in loop or switch\n");
+    }
+}
+
+void Parse::syn_genContinue(){
+    if(!while_switch_Stacks.empty()){
+        for(size_t i = 0;i < while_switch_Stacks.size();++i){
+            SymDeclare* symdeclare = while_switch_Stacks.at(i);
+            if(symdeclare->getParseType() == DOWHILE){
+                DoWhile* dowhile = dynamic_cast<DoWhile*>(symdeclare);
+                Continue* contie = new Continue();
+                contie->setGotoHeadLabel(dowhile->getHeadLabel());
+                symDeclares.push_back(contie);
+                break;
+            }
+        }
+    }else{
+        printf("continue not in loop\n");
+    }
 }
 
 void Parse::syn_genCallVar(Id* id){
@@ -582,21 +690,22 @@ void Parse::syn_genCallFun(Id* funid){
 void Parse::syn_statement(){
     
     switch (curToken->getTag()) {               //在函数体中中以数据类型开始的关键字只有变量定义和变量声明
-       case KW_INT:
-       case KW_FLOAT:
-       case KW_VOID:
-       case KW_CHAR:
-       case KW_BOOL:
-           syn_localvar(curToken->getTag());
-           break;
-       case KW_IF:
-           syn_if_else_stat();break;
-       case KW_SWITCH:break;
-       case KW_DO:syn_do_while();break;
+        case KW_INT:
+        case KW_FLOAT:
+        case KW_VOID:
+        case KW_CHAR:
+        case KW_BOOL:syn_localvar(curToken->getTag());break;
+        case KW_IF:syn_if_else_stat();break;
+        case KW_SWITCH:syn_switch(); break;
+        case KW_CASE:syn_case();break;
+        case KW_DO:syn_do_while();break;
             
-       case KW_FOR:break;
-       case KW_WHILE:break;
-       case KW_RETURN:break;
+        case KW_BREAK:syn_genBreak(); break;
+        case KW_CONTINUE:syn_genContinue(); break;
+        case KW_FOR:break;
+        case KW_WHILE:break;
+        case KW_RETURN:syn_genReturn(); break;
+        
        default:
            break;
    }

@@ -14,7 +14,6 @@
 #include <stack>
 #include "Tokens.h"
 
-
 class Parse{
 private:
     Parse(){}
@@ -30,6 +29,7 @@ private:
     FunCall* syn_funcall(string name,TAG datatype,vector<SymDeclare*>* paralist);
     void syn_statement();   //函数体;
     void syn_program();
+    
     vector<SymDeclare*>* syn_paralist();
     SymDeclare* syn_parameters(string varname,TAG datatype);
     SymDeclare* syn_parameters_init(string varname,TAG datatype);
@@ -38,10 +38,11 @@ private:
     void syn_datalist();
     void syn_if_else_stat();
     void syn_do_while();
+    void syn_switch();
+    void syn_case();
     ExpNode* syn_exp();
     void entry_block();
     void leave_block();
-    
     void ready_entry_funblock(vector<SymDeclare*>* paralist);
     void syn_block();
     void ready_leave_funblock();
@@ -55,7 +56,11 @@ private:
     
     void syn_genCallFun(Id* id);
     void syn_genCallVar(Id* id);
-    void syn_genDoWhile();
+    DoWhile* syn_genDoWhile();
+    void syn_genSwitch();
+    void syn_genReturn();
+    void syn_genBreak();
+    void syn_genContinue();
     
     ExpNode* syn_bool_or();
     ExpNode* syn_bool_and();
@@ -64,6 +69,7 @@ private:
     ExpNode* syn_bool_exp();
     ExpNode* syn_add_sub();
     ExpNode* syn_mul_div();
+    
     bool checkRepeatFunDeclare(SymDeclare* sym);
     void add_type_value(VarDataDef* vdd);
     bool match(TAG tag);
@@ -74,11 +80,14 @@ private:
 private:
     vector<SymDeclare*> symDeclares;        //伪中间代码
     vector<Token*> mTokens;
+    vector<SymDeclare*> while_switch_Stacks;
     Token* curToken;
     size_t mindex;              //向前看指针
     vector<Symbols*> symbolStack;
     Symbols* curSymbol;
     vector<string> readyDeclareFunNames;
+    vector<SymDeclare*> returnObjs;
+    Label* curFunEndLabel;
 };
 
 

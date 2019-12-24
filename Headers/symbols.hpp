@@ -20,9 +20,13 @@ using std::unordered_map;
 using std::string;
 
 enum PARSETYPE{
+    RETURNDEFINE,
     VARDEFINE,VARDECLARE,VARCALL,
     FUNDEFINE,FUNDECLARE,FUNCALL,
-    LABEL
+    LABEL,
+    DOWHILE,
+    SWITCHDECLARE,
+    CASEDECLARE,
 };
 
 class ExpNode;
@@ -36,7 +40,7 @@ public:
     SymDeclare(const std::string name, PARSETYPE type,TAG datatype);
     SymDeclare(const std::string name, PARSETYPE type);
     virtual ~SymDeclare(){}
-private:
+protected:
     void setName(std::string name);
     void setParseType(PARSETYPE type);
 public:
@@ -114,7 +118,6 @@ private:
     ExpNode* value;
 };
 
-
 class Label: public SymDeclare{
 public:
     Label();
@@ -129,10 +132,52 @@ private:
 
 class DoWhile:public SymDeclare{
 public:
-    DoWhile(){}
+    DoWhile();
     ~DoWhile(){}
+public:
+    void setGotoHeadLabel(Label* label);
+    void setGotoEndLabel(Label* label);
+    Label* getHeadLabel();
+    Label* getEndLabel();
+    void setExp(ExpNode*);
+public:
+    Label* gotoHeadLabel;
+    Label* gotoEndLabel;
+    ExpNode* exp;
+};
+
+class Switch:public SymDeclare{
+public:
+    Switch();
+    ~Switch(){}
+public:
+    void setGotoEndLabel(Label* label);
+    Label* getGotoEndLabel();
+public:
+    unordered_map<int,Label*> caseTab;
 private:
-    IfStat* determine;
+    ExpNode* exp;
+    Label* gotoLabel;
+};
+
+class Case:public  SymDeclare{
+public:
+    Case();
+    ~Case(){}
+public:
+    unordered_map<int,Label*> switchTab;
+};
+
+class Return:public SymDeclare{
+public:
+    Return();
+    ~Return(){}
+public:
+    void setRetValue(ExpNode* retValue);
+    void setGotoEndLabel(Label* label);
+private:
+    ExpNode* retValue;
+    Label* endLabel;
 };
 
 class IfStat: public SymDeclare{
@@ -158,6 +203,26 @@ private:
     Label* gotolabel;
 };
 
+class Break:public SymDeclare{
+public:
+    Break(){}
+    ~Break(){}
+public:
+    void setGotoEndLabel(Label* label);
+private:
+    Label* gotolabel;
+};
+
+class Continue:public SymDeclare{
+public:
+    Continue(){}
+    ~Continue(){}
+public:
+    void setGotoHeadLabel(Label* label);
+private:
+    Label* gotolabel;
+};
+
 class Symbols{
 public:
     Symbols(){}
@@ -169,6 +234,7 @@ public:
 private:
     unordered_map<string,SymDeclare*> syms;
 };
+
 
 
 

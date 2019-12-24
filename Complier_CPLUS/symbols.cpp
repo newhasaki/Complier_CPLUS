@@ -161,6 +161,63 @@ void IfStat::setGotoLabel(Label* label){
 void IfStat::setExp(ExpNode* exp){
     this->exp = exp;
 }
+
+Case::Case(){
+    setParseType(CASEDECLARE);
+}
+
+Switch::Switch(){
+    setParseType(SWITCHDECLARE);
+}
+
+DoWhile::DoWhile(){
+    setParseType(DOWHILE);
+}
+
+void DoWhile::setExp(ExpNode* exp){
+    exp = exp;
+}
+
+/*
+ void setGotoHeadLabel(Label* label);
+ void setGotoEndLabel(Label* label);
+ */
+
+void DoWhile::setGotoHeadLabel(Label *label){
+    this->gotoHeadLabel = label;
+}
+
+void DoWhile::setGotoEndLabel(Label *label){
+    this->gotoEndLabel = label;
+}
+
+Label* DoWhile::getHeadLabel(){
+    return gotoHeadLabel;
+}
+
+Label* DoWhile::getEndLabel(){
+    return gotoEndLabel;
+}
+
+void Switch::setGotoEndLabel(Label* label){
+    this->gotoLabel = label;
+}
+
+Label* Switch::getGotoEndLabel(){
+    return gotoLabel;
+}
+
+Return::Return(){
+    setParseType(RETURNDEFINE);
+}
+
+void Return::setRetValue(ExpNode* retValue){
+    this->retValue = retValue;
+}
+
+void Return::setGotoEndLabel(Label* label){
+    this->endLabel = label;
+}
 /*
  class ElseStat: public SymDeclare{
  public:
@@ -175,6 +232,14 @@ void IfStat::setExp(ExpNode* exp){
  */
 
 void ElseStat::setGotoLabel(Label *label){
+    this->gotolabel = label;
+}
+
+void Break::setGotoEndLabel(Label *label){
+    this->gotolabel = label;
+}
+
+void Continue::setGotoHeadLabel(Label *label){
     this->gotolabel = label;
 }
 
