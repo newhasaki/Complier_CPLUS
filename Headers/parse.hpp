@@ -27,6 +27,7 @@ private:
     FunDef* syn_fundef(string name,TAG datatype,vector<SymDeclare*>* paralist);      //函数定义
     FunDeclare* syn_fundeclare(string name,TAG datatype,vector<SymDeclare*>* paralist);  //函数声明
     FunCall* syn_funcall(string name,TAG datatype,vector<SymDeclare*>* paralist);
+    
     void syn_statement();   //函数体;
     void syn_program();
     
@@ -40,6 +41,7 @@ private:
     void syn_do_while();
     void syn_switch();
     void syn_case();
+    void syn_default();
     ExpNode* syn_exp();
     void entry_block();
     void leave_block();

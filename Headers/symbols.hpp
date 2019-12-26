@@ -27,6 +27,8 @@ enum PARSETYPE{
     DOWHILE,
     SWITCHDECLARE,
     CASEDECLARE,
+    IFSTAT,
+    ELSESTAT,
 };
 
 class ExpNode;
@@ -135,8 +137,8 @@ public:
     DoWhile();
     ~DoWhile(){}
 public:
-    void setGotoHeadLabel(Label* label);
-    void setGotoEndLabel(Label* label);
+    void createHeadLabel(Label* label);
+    void createEndLabel(Label* label);
     Label* getHeadLabel();
     Label* getEndLabel();
     void setExp(ExpNode*);
@@ -151,16 +153,20 @@ public:
     Switch();
     ~Switch(){}
 public:
-    void setGotoEndLabel(Label* label);
-    Label* getGotoEndLabel();
+    void createEndLabel(Label* label);
+    Label* getEndLabel();
+    void createDefaultLabel(Label* default_label);
+    Label* getDefaultLabel();
+    void setExp(ExpNode* exp);
 public:
     unordered_map<int,Label*> caseTab;
 private:
     ExpNode* exp;
-    Label* gotoLabel;
+    Label* endLabel;
+    Label* defaultLabel;
 };
 
-class Case:public  SymDeclare{
+class Case:public SymDeclare{
 public:
     Case();
     ~Case(){}
@@ -180,9 +186,16 @@ private:
     Label* endLabel;
 };
 
+class Default:public SymDeclare{
+public:
+    Default();
+    ~Default();
+
+};
+
 class IfStat: public SymDeclare{
 public:
-    IfStat(){}
+    IfStat();
     ~IfStat(){}
 public:
     void setGotoLabel(Label* label);
@@ -194,7 +207,7 @@ private:
 
 class ElseStat: public SymDeclare{
 public:
-    ElseStat(){}
+    ElseStat();
     ~ElseStat(){}
 public:
     void setGotoLabel(Label* label);

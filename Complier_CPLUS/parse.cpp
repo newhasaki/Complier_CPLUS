@@ -259,9 +259,29 @@ void Parse::syn_case(){
     }
 }
 
+void Parse::syn_default(){
+    Label* default_label = new Label();
+    symDeclares.push_back(default_label);
+    if(!while_switch_Stacks.empty()){
+          SymDeclare* symdeclare = while_switch_Stacks.at(while_switch_Stacks.size()-1);
+          if(symdeclare->getParseType() == SWITCHDECLARE){
+          Switch* sch = dynamic_cast<Switch*>(symdeclare);
+              if(match(COLON)){
+                  if(sch->getDefaultLabel()==nullptr){
+                            sch->createDefaultLabel(default_label);
+                  }else{
+                      printf("Redefinition default in switch\n");
+                  }
+              }
+          }
+    }
+}
+
 void Parse::syn_switch(){
+    nextToken();
     
     Switch* sch = new Switch();
+    
     while_switch_Stacks.push_back(sch);
     Label* endLabel = new Label();
     
@@ -269,7 +289,7 @@ void Parse::syn_switch(){
         
     }
     
-    syn_exp();
+    sch->setExp(syn_exp());
     
     if(match(RPAREN)){
         
@@ -286,7 +306,6 @@ void Parse::syn_switch(){
 }
 
 void Parse::syn_do_while(){
-    nextToken();
     if(match(KW_DO)){
         
         Label* headLabel = new Label();
@@ -295,6 +314,8 @@ void Parse::syn_do_while(){
         symDeclares.push_back(headLabel);
         
         DoWhile* dowhile = new DoWhile();
+        dowhile->createHeadLabel(headLabel);
+        dowhile->createEndLabel(endLabel);
         while_switch_Stacks.push_back(dowhile);
         
         if(match(LBRACE)){
@@ -302,16 +323,19 @@ void Parse::syn_do_while(){
             syn_block();
             entry_block();
             if(match(KW_WHILE)){
-                dowhile->setExp(syn_exp());
-                dowhile->setGotoHeadLabel(headLabel);
-                symDeclares.push_back(endLabel);
+                
             }
             
             if(match(LPAREN)){
-               
+               dowhile->setExp(syn_exp());
             }
             
             if(match(RPAREN)){
+                
+                symDeclares.push_back(endLabel);
+            }
+            
+            if(match(SEMICON)){
                 
             }
         }
@@ -342,13 +366,8 @@ void Parse::syn_if_else_stat(){
     
     if(match(LBRACE)){
         entry_block();
-
         syn_block();
-        if(match(RBRACE)){
-            leave_block();
-        }else{
-            printf("except }\n");
-        }
+        leave_block();
         
         //else
         if(match(KW_ELSE)){
@@ -359,13 +378,11 @@ void Parse::syn_if_else_stat(){
             Label* second_label = new Label();
             ifstat->setGotoLabel(second_label);
             symDeclares.push_back(second_label);
-                if(match(LBRACE)){
-                    entry_block();
-                    syn_statement();
-                    if(match(RBRACE)){
-                        leave_block();
-                    }
-                }
+            if(match(LBRACE)){
+                entry_block();
+                syn_block();
+                leave_block();
+            }
         }else{
              symDeclares.push_back(first_label);   //记录标签
         }
@@ -564,11 +581,6 @@ void Parse::ready_leave_funblock(){
     leave_block();
 }
 
-/*
- void syn_fundef();      //函数定义
- void syn_fundeclare();  //函数声明
-*/
-
 FunDef* Parse::syn_fundef(string name,TAG datatype,vector<SymDeclare*>* paralist){
     FunDef* fundef = new FunDef(name,FUNDEFINE,datatype);  //函数定义
     fundef->paralist = paralist;
@@ -596,9 +608,14 @@ DoWhile* Parse::syn_genDoWhile(){
 }
 
 void Parse::syn_genReturn(){
+    
     Return* retObject = new Return();
+    nextToken();
     retObject->setRetValue(syn_exp());
     retObject->setGotoEndLabel(curFunEndLabel);
+    if(match(SEMICON)){
+        
+    }
 }
 
 void Parse::syn_genBreak(){
@@ -610,11 +627,15 @@ void Parse::syn_genBreak(){
             brk->setGotoEndLabel(dowhile->getEndLabel());
         }else if(symdeclare->getParseType() == CASEDECLARE){
             Switch* sch = dynamic_cast<Switch*>(symdeclare);
-            brk->setGotoEndLabel(sch->getGotoEndLabel());
+            brk->setGotoEndLabel(sch->getEndLabel());
         }
         symDeclares.push_back(brk);
     }else{
         printf("break not in loop or switch\n");
+    }
+    nextToken();
+    if(match(SEMICON)){
+        
     }
 }
 
@@ -632,6 +653,10 @@ void Parse::syn_genContinue(){
         }
     }else{
         printf("continue not in loop\n");
+    }
+    nextToken();
+    if(match(SEMICON)){
+        
     }
 }
 
@@ -698,8 +723,8 @@ void Parse::syn_statement(){
         case KW_IF:syn_if_else_stat();break;
         case KW_SWITCH:syn_switch(); break;
         case KW_CASE:syn_case();break;
+        case KW_DEFAULT:syn_default(); break;
         case KW_DO:syn_do_while();break;
-            
         case KW_BREAK:syn_genBreak(); break;
         case KW_CONTINUE:syn_genContinue(); break;
         case KW_FOR:break;

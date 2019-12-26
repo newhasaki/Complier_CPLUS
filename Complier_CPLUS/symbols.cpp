@@ -154,6 +154,10 @@ size_t Label::getLable(){
     return curLabel;
 }
 
+IfStat::IfStat(){
+    setParseType(IFSTAT);
+}
+
 void IfStat::setGotoLabel(Label* label){
     this->gotolabel = label;
 }
@@ -183,11 +187,11 @@ void DoWhile::setExp(ExpNode* exp){
  void setGotoEndLabel(Label* label);
  */
 
-void DoWhile::setGotoHeadLabel(Label *label){
+void DoWhile::createHeadLabel(Label *label){
     this->gotoHeadLabel = label;
 }
 
-void DoWhile::setGotoEndLabel(Label *label){
+void DoWhile::createEndLabel(Label *label){
     this->gotoEndLabel = label;
 }
 
@@ -199,12 +203,24 @@ Label* DoWhile::getEndLabel(){
     return gotoEndLabel;
 }
 
-void Switch::setGotoEndLabel(Label* label){
-    this->gotoLabel = label;
+void Switch::createEndLabel(Label* label){
+    this->endLabel = label;
 }
 
-Label* Switch::getGotoEndLabel(){
-    return gotoLabel;
+void Switch::createDefaultLabel(Label* label){
+    this->defaultLabel = label;
+}
+
+Label* Switch::getDefaultLabel(){
+    return defaultLabel;
+}
+
+Label* Switch::getEndLabel(){
+    return endLabel;
+}
+
+void Switch::setExp(ExpNode* exp){
+    this->exp = exp;
 }
 
 Return::Return(){
@@ -230,6 +246,10 @@ void Return::setGotoEndLabel(Label* label){
      Label* gotolabel;
  }
  */
+
+ElseStat::ElseStat(){
+    setParseType(ELSESTAT);
+}
 
 void ElseStat::setGotoLabel(Label *label){
     this->gotolabel = label;
