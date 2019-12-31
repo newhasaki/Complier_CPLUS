@@ -29,7 +29,7 @@ typedef struct{
 
 class Semantics{
 public:
-    Semantics(map<string,SymDeclare*>*);
+    Semantics(map<string,SymDeclare*>*,vector<Symbols*>);
     Semantics();
     ~Semantics();
     void setSymbolStack(vector<Symbols*> symbolStack);
@@ -37,6 +37,7 @@ public:
     void genFunDefine(SymDeclare* symdeclare);
     void genFunEntry(SymDeclare* symdeclare);
     void genReturnDefine(SymDeclare* symdeclare);
+    void DFS(vector<SymDeclare*>);
     
 public:
     void start();

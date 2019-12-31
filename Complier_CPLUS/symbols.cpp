@@ -142,24 +142,6 @@ void VarCall::setValue(ExpNode *value){
     this->value = value;
 }
 
-
-//size_t Label::labelNum = 0;
-
-//Label::Label():SymDeclare("LABEL", LABEL){
-//    curLabel = labelNum;
-//    labelNum++;
-//}
-//
-//size_t Label::getLable(){
-//    return curLabel;
-//}
-//
-
-//
-//void IfStat::setGotoLabel(Label* label){
-//    this->gotolabel = label;
-//}
-
 IfStat::IfStat(){
     setParseType(IFSTAT);
     setName("IfStat");
@@ -186,43 +168,6 @@ void DoWhile::setExp(ExpNode* exp){
     exp = exp;
 }
 
-/*
- void setGotoHeadLabel(Label* label);
- void setGotoEndLabel(Label* label);
- */
-
-//void DoWhile::createHeadLabel(Label *label){
-//    this->gotoHeadLabel = label;
-//}
-//
-//void DoWhile::createEndLabel(Label *label){
-//    this->gotoEndLabel = label;
-//}
-//
-//Label* DoWhile::getHeadLabel(){
-//    return gotoHeadLabel;
-//}
-//
-//Label* DoWhile::getEndLabel(){
-//    return gotoEndLabel;
-//}
-//
-//void Switch::createEndLabel(Label* label){
-//    this->endLabel = label;
-//}
-
-//void Switch::createDefaultLabel(Label* label){
-//    this->defaultLabel = label;
-//}
-//
-//Label* Switch::getDefaultLabel(){
-//    return defaultLabel;
-//}
-//
-//Label* Switch::getEndLabel(){
-//    return endLabel;
-//}
-
 void Switch::setExp(ExpNode* exp){
     this->exp = exp;
 }
@@ -235,39 +180,11 @@ void Return::setRetValue(ExpNode* retValue){
     this->retValue = retValue;
 }
 
-//void Return::setGotoEndLabel(Label* label){
-//    this->endLabel = label;
-//}
-/*
- class ElseStat: public SymDeclare{
- public:
-     ElseStat(){}
-     ~ElseStat(){}
- public:
-     void setGotoLabel(Label* label);
- private:
-     ExpNode* exp;
-     Label* gotolabel;
- }
- */
-
 ElseStat::ElseStat(){
     setParseType(ELSESTAT);
     setName("ElseStat");
     this->m_symbols = new Symbols();
 }
-
-//void ElseStat::setGotoLabel(Label *label){
-//    this->gotolabel = label;
-//}
-//
-//void Break::setGotoEndLabel(Label *label){
-//    this->gotolabel = label;
-//}
-//
-//void Continue::setGotoHeadLabel(Label *label){
-//    this->gotolabel = label;
-//}
 
 TAG ExpNode::getNodeType(){
     return nodetype;

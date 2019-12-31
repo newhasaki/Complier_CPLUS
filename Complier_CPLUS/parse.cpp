@@ -617,10 +617,6 @@ void Parse::ready_entry_funblock(vector<SymDeclare*>* paralist,SymDeclare* symde
     for(size_t i=0;i<paralist->size();++i){
         fundef->m_symbols->insert(paralist->at(i)->getName(), paralist->at(i));
     }
-    
-//    for(vector<SymDeclare*>::iterator it = paralist->begin();it!=paralist->end();it++){
-//        fundef->m_symbols->insert((*it)->getName(), *it);
-//    }
 }
 
 void Parse::entry_block(SymDeclare* symdeclare){
@@ -631,8 +627,8 @@ void Parse::entry_block(SymDeclare* symdeclare){
 
 void Parse::leave_block(){
     blockStack.pop_back();
-    symbolStack.pop_back();
-    //curSymbol = symbolStack.at(symbolStack.size()-1);
+    if(symbolStack.size()!=1)
+        symbolStack.pop_back();
 }
 
 void Parse::syn_block(){
@@ -768,7 +764,6 @@ void Parse::syn_genCallFun(Id* funid){
         
         FunCall* funcall = new FunCall(funid->getName(),FUNCALL,fun->getDataType());
         funcall->paralist = paralist;
-        //symDeclares.push_back(funcall);
     }else if(match(RPAREN)){
         if(paraInfos->size()!=0){
             printf("%s except %ld argv\n", funid->getName().c_str(),paraInfos->size());

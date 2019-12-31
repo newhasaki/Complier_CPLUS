@@ -25,7 +25,7 @@ int main(int argc, const char * argv[]) {
     vector<Symbols*> symbolStack = parse.getSymbolStack();
 
 
-    Semantics semantic(parse.getFunSymTab());
+    Semantics semantic(parse.getFunSymTab(),symbolStack);
     semantic.start();
     
     return 0;

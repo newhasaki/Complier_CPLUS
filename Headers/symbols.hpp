@@ -72,13 +72,6 @@ private:
     ExpNode* value;
 };
 
-//class VarDeclare: public SymDeclare{
-//public:
-//    VarDeclare(const string name, PARSETYPE type,TAG tag);
-//    VarDeclare(){}
-//    ~VarDeclare(){}
-//};
-
 class Fun: public SymDeclare{
 public:
     Fun(const string name,PARSETYPE type,TAG retvalue);
@@ -99,9 +92,7 @@ public:
     FunDef(){}
     ~FunDef(){}
 public:
-    //Symbols* m_symbols;
     vector<SymDeclare*> m_allLocal;
-    //vector<SymDeclare*> m_action;
 };
 
 class FunDeclare: public Fun{
@@ -129,33 +120,14 @@ private:
     ExpNode* value;
 };
 
-//class Label: public SymDeclare{
-//public:
-//    Label();
-//    Label(PARSETYPE);
-//    ~Label(){}
-//private:
-//    size_t getLable();
-//private:
-//    size_t curLabel;
-//    static size_t labelNum;
-//};
-
 class DoWhile:public SymDeclare{
 public:
     DoWhile();
     ~DoWhile(){}
 public:
-//
-//    void createHeadLabel(Label* label);
-//    void createEndLabel(Label* label);
-//    Label* getHeadLabel();
-//    Label* getEndLabel();
     void setExp(ExpNode*);
 public:
     Symbols* m_symbols;
-//    Label* gotoHeadLabel;
-//    Label* gotoEndLabel;
     ExpNode* exp;
 };
 
@@ -163,26 +135,15 @@ class Switch:public SymDeclare{
 public:
     Switch();
     ~Switch(){}
-//public:
-//    void createEndLabel(Label* label);
-//    Label* getEndLabel();
-//    void createDefaultLabel(Label* default_label);
-//    Label* getDefaultLabel();
     void setExp(ExpNode* exp);
-//public:
-//    unordered_map<int,Label*> caseTab;
 private:
     ExpNode* exp;
-//    Label* endLabel;
-//    Label* defaultLabel;
 };
 
 class Case:public SymDeclare{
 public:
     Case();
     ~Case(){}
-public:
-    //unordered_map<int,Label*> switchTab;
 };
 
 class Return:public SymDeclare{
@@ -191,10 +152,8 @@ public:
     ~Return(){}
 public:
     void setRetValue(ExpNode* retValue);
-    //void setGotoEndLabel(Label* label);
 private:
     ExpNode* retValue;
-    //Label* endLabel;
 };
 
 class Default:public SymDeclare{
@@ -209,9 +168,6 @@ public:
     ~IfStat(){}
 public:
     void setExp(ExpNode*);
-//public:
-     //vector<SymDeclare*> m_action;
-    
 private:
     ExpNode* exp;
 };
@@ -232,20 +188,12 @@ class Break:public SymDeclare{
 public:
     Break(){}
     ~Break(){}
-public:
-    //void setGotoEndLabel(Label* label);
-private:
-    //Label* gotolabel;
 };
 
 class Continue:public SymDeclare{
 public:
     Continue(){}
     ~Continue(){}
-//public:
-//    void setGotoHeadLabel(Label* label);
-//private:
-//    Label* gotolabel;
 };
 
 class Symbols{
@@ -282,7 +230,5 @@ private:
     TAG nodetype;
     std::string varname;
 };
-
-
 
 #endif /* symbols_hpp */

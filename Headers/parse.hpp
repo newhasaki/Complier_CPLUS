@@ -93,7 +93,6 @@ private:
     SymDeclare* getCurBlock();
 private:
     void nextToken();
-   
 private:
     map<string,SymDeclare*> funSymbolTab;
     vector<SymDeclare*> blockStack;
@@ -103,10 +102,8 @@ private:
     Token* curToken;
     size_t mindex;              //向前看指针
     vector<Symbols*> symbolStack;
-    //Symbols* curSymbol;
     vector<string> readyDeclareFunNames;
-    vector<SymDeclare*> returnObjs;
-    //Label* curFunEndLabel;
+    vector<SymDeclare*> returnObjs;;
     FunDef* curFundef;
 };
 

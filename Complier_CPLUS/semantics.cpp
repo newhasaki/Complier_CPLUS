@@ -20,9 +20,10 @@ void Semantics::setSymbolStack(vector<Symbols*> symbolStack){
     m_symbolStack = symbolStack;
 }
 
-Semantics::Semantics(map<string,SymDeclare*>* funSymbolTab){
+Semantics::Semantics(map<string,SymDeclare*>* funSymbolTab,vector<Symbols*> symbolStack){
     this->funSymbolTab = funSymbolTab;
-   
+    this->m_symbolStack = symbolStack;
+    
     memory_alloca[KW_INT] = allocas{"i32","4"};
     memory_alloca[KW_CHAR] = allocas{"i8","1"};
     memory_alloca[KW_FLOAT] = allocas{"float","4"};
@@ -113,9 +114,20 @@ void Semantics::genFunDefine(SymDeclare* symdeclare){
     }
 }
 
+void Semantics::DFS(vector<SymDeclare *> ves){
+    for(vector<SymDeclare*>::iterator it=ves.begin();it!=ves.end();++it){
+        if((*it)->getParseType()==VARDEFINE){
+            
+        }else if((*it)->getParseType()==FUNDEFINE){
+            
+        }
+    }
+}
+
 void Semantics::start(){
     for(map<string,SymDeclare*>::iterator it = funSymbolTab->begin(); it!=funSymbolTab->end();++it){
-        
+        vector<SymDeclare*> ves = it->second->m_action;
+        DFS(ves);
     }
 }
 
