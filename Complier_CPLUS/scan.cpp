@@ -429,7 +429,7 @@ Token* Scan::tokenize(){
         do{
             str.push_back(getCurChar());
             nextChar();
-        }while(isalnum(getCurChar()));
+        }while(isalnum(getCurChar())|| getCurChar()=='_');
         backChar();
         TAG curTag = keywords.getTag(str);
         

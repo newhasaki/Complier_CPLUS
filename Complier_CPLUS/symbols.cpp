@@ -143,23 +143,27 @@ void VarCall::setValue(ExpNode *value){
 }
 
 
-size_t Label::labelNum = 0;
+//size_t Label::labelNum = 0;
 
-Label::Label():SymDeclare("LABEL", LABEL){
-    curLabel = labelNum;
-    labelNum++;
-}
+//Label::Label():SymDeclare("LABEL", LABEL){
+//    curLabel = labelNum;
+//    labelNum++;
+//}
+//
+//size_t Label::getLable(){
+//    return curLabel;
+//}
+//
 
-size_t Label::getLable(){
-    return curLabel;
-}
+//
+//void IfStat::setGotoLabel(Label* label){
+//    this->gotolabel = label;
+//}
 
 IfStat::IfStat(){
     setParseType(IFSTAT);
-}
-
-void IfStat::setGotoLabel(Label* label){
-    this->gotolabel = label;
+    setName("IfStat");
+    this->m_symbols = new Symbols();
 }
 
 void IfStat::setExp(ExpNode* exp){
@@ -187,37 +191,37 @@ void DoWhile::setExp(ExpNode* exp){
  void setGotoEndLabel(Label* label);
  */
 
-void DoWhile::createHeadLabel(Label *label){
-    this->gotoHeadLabel = label;
-}
+//void DoWhile::createHeadLabel(Label *label){
+//    this->gotoHeadLabel = label;
+//}
+//
+//void DoWhile::createEndLabel(Label *label){
+//    this->gotoEndLabel = label;
+//}
+//
+//Label* DoWhile::getHeadLabel(){
+//    return gotoHeadLabel;
+//}
+//
+//Label* DoWhile::getEndLabel(){
+//    return gotoEndLabel;
+//}
+//
+//void Switch::createEndLabel(Label* label){
+//    this->endLabel = label;
+//}
 
-void DoWhile::createEndLabel(Label *label){
-    this->gotoEndLabel = label;
-}
-
-Label* DoWhile::getHeadLabel(){
-    return gotoHeadLabel;
-}
-
-Label* DoWhile::getEndLabel(){
-    return gotoEndLabel;
-}
-
-void Switch::createEndLabel(Label* label){
-    this->endLabel = label;
-}
-
-void Switch::createDefaultLabel(Label* label){
-    this->defaultLabel = label;
-}
-
-Label* Switch::getDefaultLabel(){
-    return defaultLabel;
-}
-
-Label* Switch::getEndLabel(){
-    return endLabel;
-}
+//void Switch::createDefaultLabel(Label* label){
+//    this->defaultLabel = label;
+//}
+//
+//Label* Switch::getDefaultLabel(){
+//    return defaultLabel;
+//}
+//
+//Label* Switch::getEndLabel(){
+//    return endLabel;
+//}
 
 void Switch::setExp(ExpNode* exp){
     this->exp = exp;
@@ -231,9 +235,9 @@ void Return::setRetValue(ExpNode* retValue){
     this->retValue = retValue;
 }
 
-void Return::setGotoEndLabel(Label* label){
-    this->endLabel = label;
-}
+//void Return::setGotoEndLabel(Label* label){
+//    this->endLabel = label;
+//}
 /*
  class ElseStat: public SymDeclare{
  public:
@@ -249,19 +253,21 @@ void Return::setGotoEndLabel(Label* label){
 
 ElseStat::ElseStat(){
     setParseType(ELSESTAT);
+    setName("ElseStat");
+    this->m_symbols = new Symbols();
 }
 
-void ElseStat::setGotoLabel(Label *label){
-    this->gotolabel = label;
-}
-
-void Break::setGotoEndLabel(Label *label){
-    this->gotolabel = label;
-}
-
-void Continue::setGotoHeadLabel(Label *label){
-    this->gotolabel = label;
-}
+//void ElseStat::setGotoLabel(Label *label){
+//    this->gotolabel = label;
+//}
+//
+//void Break::setGotoEndLabel(Label *label){
+//    this->gotolabel = label;
+//}
+//
+//void Continue::setGotoHeadLabel(Label *label){
+//    this->gotolabel = label;
+//}
 
 TAG ExpNode::getNodeType(){
     return nodetype;
@@ -273,6 +279,10 @@ void ExpNode::setNodeType(TAG tag){
 
 void ExpNode::setValue(VarDataDef value){
     this->value = value;
+}
+
+VarDataDef ExpNode::getValue(){
+    return value;
 }
 
 void ExpNode::setVarName(std::string varname){

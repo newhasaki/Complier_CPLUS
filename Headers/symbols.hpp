@@ -11,7 +11,7 @@
 
 #include <unordered_map>
 #include <string>
-#include "Tokens.h"
+#include "Tokens.hpp"
 #include <vector>
 
 
@@ -42,7 +42,7 @@ public:
     SymDeclare(const std::string name, PARSETYPE type,TAG datatype);
     SymDeclare(const std::string name, PARSETYPE type);
     virtual ~SymDeclare(){}
-protected:
+public:
     void setName(std::string name);
     void setParseType(PARSETYPE type);
 public:
@@ -50,11 +50,15 @@ public:
     PARSETYPE getParseType();
     TAG getDataType();
     void setDataType(TAG datatype);
+public:
+    Symbols* m_symbols;
+    vector<SymDeclare*> m_action;
 private:
     TAG datatype;
     std::string name;
     PARSETYPE parseType;
 };
+
 
 class VarDef: public SymDeclare{
 public:
@@ -84,7 +88,9 @@ public:
     void sym_print();
     vector<SymDeclare*>* getParaInfo();
 public:
+    
     vector<SymDeclare*>* paralist;
+    vector<SymDeclare*> localVars;
 };
 
 class FunDef: public Fun{
@@ -92,7 +98,10 @@ public:
     FunDef(const string name,PARSETYPE type,TAG retvalue);
     FunDef(){}
     ~FunDef(){}
-
+public:
+    //Symbols* m_symbols;
+    vector<SymDeclare*> m_allLocal;
+    //vector<SymDeclare*> m_action;
 };
 
 class FunDeclare: public Fun{
@@ -120,31 +129,33 @@ private:
     ExpNode* value;
 };
 
-class Label: public SymDeclare{
-public:
-    Label();
-    Label(PARSETYPE);
-    ~Label(){}
-private:
-    size_t getLable();
-private:
-    size_t curLabel;
-    static size_t labelNum;
-};
+//class Label: public SymDeclare{
+//public:
+//    Label();
+//    Label(PARSETYPE);
+//    ~Label(){}
+//private:
+//    size_t getLable();
+//private:
+//    size_t curLabel;
+//    static size_t labelNum;
+//};
 
 class DoWhile:public SymDeclare{
 public:
     DoWhile();
     ~DoWhile(){}
 public:
-    void createHeadLabel(Label* label);
-    void createEndLabel(Label* label);
-    Label* getHeadLabel();
-    Label* getEndLabel();
+//
+//    void createHeadLabel(Label* label);
+//    void createEndLabel(Label* label);
+//    Label* getHeadLabel();
+//    Label* getEndLabel();
     void setExp(ExpNode*);
 public:
-    Label* gotoHeadLabel;
-    Label* gotoEndLabel;
+    Symbols* m_symbols;
+//    Label* gotoHeadLabel;
+//    Label* gotoEndLabel;
     ExpNode* exp;
 };
 
@@ -152,18 +163,18 @@ class Switch:public SymDeclare{
 public:
     Switch();
     ~Switch(){}
-public:
-    void createEndLabel(Label* label);
-    Label* getEndLabel();
-    void createDefaultLabel(Label* default_label);
-    Label* getDefaultLabel();
+//public:
+//    void createEndLabel(Label* label);
+//    Label* getEndLabel();
+//    void createDefaultLabel(Label* default_label);
+//    Label* getDefaultLabel();
     void setExp(ExpNode* exp);
-public:
-    unordered_map<int,Label*> caseTab;
+//public:
+//    unordered_map<int,Label*> caseTab;
 private:
     ExpNode* exp;
-    Label* endLabel;
-    Label* defaultLabel;
+//    Label* endLabel;
+//    Label* defaultLabel;
 };
 
 class Case:public SymDeclare{
@@ -171,7 +182,7 @@ public:
     Case();
     ~Case(){}
 public:
-    unordered_map<int,Label*> switchTab;
+    //unordered_map<int,Label*> switchTab;
 };
 
 class Return:public SymDeclare{
@@ -180,17 +191,16 @@ public:
     ~Return(){}
 public:
     void setRetValue(ExpNode* retValue);
-    void setGotoEndLabel(Label* label);
+    //void setGotoEndLabel(Label* label);
 private:
     ExpNode* retValue;
-    Label* endLabel;
+    //Label* endLabel;
 };
 
 class Default:public SymDeclare{
 public:
     Default();
     ~Default();
-
 };
 
 class IfStat: public SymDeclare{
@@ -198,11 +208,12 @@ public:
     IfStat();
     ~IfStat(){}
 public:
-    void setGotoLabel(Label* label);
     void setExp(ExpNode*);
+//public:
+     //vector<SymDeclare*> m_action;
+    
 private:
     ExpNode* exp;
-    Label* gotolabel;
 };
 
 class ElseStat: public SymDeclare{
@@ -210,10 +221,11 @@ public:
     ElseStat();
     ~ElseStat(){}
 public:
-    void setGotoLabel(Label* label);
+    vector<SymDeclare*> m_symdeclare;
+    //void setGotoLabel(Label* label);
 private:
     ExpNode* exp;
-    Label* gotolabel;
+    //Label* gotolabel;
 };
 
 class Break:public SymDeclare{
@@ -221,19 +233,19 @@ public:
     Break(){}
     ~Break(){}
 public:
-    void setGotoEndLabel(Label* label);
+    //void setGotoEndLabel(Label* label);
 private:
-    Label* gotolabel;
+    //Label* gotolabel;
 };
 
 class Continue:public SymDeclare{
 public:
     Continue(){}
     ~Continue(){}
-public:
-    void setGotoHeadLabel(Label* label);
-private:
-    Label* gotolabel;
+//public:
+//    void setGotoHeadLabel(Label* label);
+//private:
+//    Label* gotolabel;
 };
 
 class Symbols{
@@ -243,12 +255,12 @@ public:
 public:
     void insert(string sym_name,SymDeclare* data);
     SymDeclare* find(const string&);
+    
+    
     unordered_map<string,SymDeclare*>* getSyms();
 private:
     unordered_map<string,SymDeclare*> syms;
 };
-
-
 
 
 class ExpNode{
@@ -258,11 +270,11 @@ public:
 public:
     ExpNode* left;
     ExpNode* right;
-    
 public:
     void setNodeType(TAG tag);
     TAG getNodeType();
     void setValue(VarDataDef value);
+    VarDataDef getValue();
     void setVarName(string str);
     void createParentNode(ExpNode* left,ExpNode* right,TAG tag);
 private:

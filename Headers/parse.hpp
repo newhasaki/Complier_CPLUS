@@ -11,16 +11,28 @@
 
 #include "scan.hpp"
 #include "symbols.hpp"
-#include <stack>
-#include "Tokens.h"
+#include "Tokens.hpp"
+#include <queue>
+#include <iostream>
+using std::cout;
+using std::endl;
+using std::queue;
 
 class Parse{
-private:
+public:
     Parse(){}
 public:
     Parse(vector<Token*>&);
-    void startParse();
+public:
+    vector<SymDeclare*> startParse();
+    void setTokens(vector<Token*>);
+    vector<Symbols*> getSymbolStack();
+    void printAST_BFS();
+    void printAST_DFS();
+    void DFS(vector<SymDeclare*>);
+     map<string,SymDeclare*>* getFunSymTab();
 private:
+    
     void syn_localvar(TAG datatype);//变量定义
     void syn_type();
     void syn_id(TAG datatype);
@@ -43,16 +55,15 @@ private:
     void syn_case();
     void syn_default();
     ExpNode* syn_exp();
-    void entry_block();
+    void entry_block(SymDeclare*);
     void leave_block();
-    void ready_entry_funblock(vector<SymDeclare*>* paralist);
+    void ready_entry_funblock(vector<SymDeclare*>* paralist,SymDeclare* symdeclare);
     void syn_block();
     void ready_leave_funblock();
     bool syn_isRedefinition(const string& name);
     bool syn_isUnInitialization(const string& name);
     bool syn_symbols_check(const string& name,PARSETYPE parsetype);
     SymDeclare* syn_getTargetInfo(const string& name,PARSETYPE parsetype);
-    bool syn_callfun_check(const string& name,PARSETYPE parsetype);
     bool syn_paralist_check(const string& name);
     bool syn_isUndefinition(const string& name,PARSETYPE parsetype);
     
@@ -63,7 +74,7 @@ private:
     void syn_genReturn();
     void syn_genBreak();
     void syn_genContinue();
-    
+
     ExpNode* syn_bool_or();
     ExpNode* syn_bool_and();
     ExpNode* syn_bool_compare();
@@ -77,19 +88,26 @@ private:
     bool match(TAG tag);
     bool match_const();
     bool match_type();
+    
+    Symbols* getCurSymbol();
+    SymDeclare* getCurBlock();
 private:
     void nextToken();
+   
 private:
-    vector<SymDeclare*> symDeclares;        //伪中间代码
+    map<string,SymDeclare*> funSymbolTab;
+    vector<SymDeclare*> blockStack;
+    vector<SymDeclare*> symDeclares;        //Ast
     vector<Token*> mTokens;
     vector<SymDeclare*> while_switch_Stacks;
     Token* curToken;
     size_t mindex;              //向前看指针
     vector<Symbols*> symbolStack;
-    Symbols* curSymbol;
+    //Symbols* curSymbol;
     vector<string> readyDeclareFunNames;
     vector<SymDeclare*> returnObjs;
-    Label* curFunEndLabel;
+    //Label* curFunEndLabel;
+    FunDef* curFundef;
 };
 
 

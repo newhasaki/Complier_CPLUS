@@ -12,12 +12,31 @@ Parse::Parse(vector<Token*>& tokens){
     mTokens = tokens;
     mindex = 0;
     curToken = tokens.at(mindex++);
-    curSymbol = new Symbols(); //创建符号表
-    symbolStack.push_back(curSymbol);
+    
+    Symbols* rootSymbol = new Symbols(); //创建符号表
+    symbolStack.push_back(rootSymbol);
+    
+    SymDeclare* rootBlock = new SymDeclare();
+    rootBlock->setName("TranslationUnitDecl");
+    rootBlock->m_symbols = rootSymbol;
+    blockStack.push_back(rootBlock);
+    
+    
+    
+    curFundef = nullptr;
 }
 
-void Parse::startParse(){
+void Parse::setTokens(vector<Token *> tokens){
+    mTokens = tokens;
+}
+
+vector<Symbols*> Parse::getSymbolStack(){
+    return symbolStack;
+}
+
+vector<SymDeclare*>  Parse::startParse(){
     syn_program();
+    return  symDeclares;
 }
 
 void Parse::syn_program(){
@@ -35,10 +54,22 @@ void Parse::syn_localvar(TAG datatype){
             if(match(ASSIGN)){
                 if(match(ID)||match_const()){
                     if(!syn_isRedefinition(id->getName())){     //检测变量是否重定义
-                      
-                        VarDef* symbol = syn_vardefine(id->getName(),datatype);
-                        curSymbol->insert(id->getName(),symbol);
-                        symDeclares.push_back(symbol);
+                        
+                        VarDef* vardef = syn_vardefine(id->getName(),datatype);
+                        SymDeclare* curBlock = getCurBlock();      //收集块内语句信息
+                        curBlock->m_symbols->insert(id->getName(),vardef);        //收集符号信息
+                        curBlock->m_action.push_back(vardef);
+//                        if(curBlock->getParseType()==FUNDEFINE){
+//
+//                            FunDef* fundef = dynamic_cast<FunDef*>(curBlock);
+//                            fundef->m_action.push_back(vardef);
+//
+//                        }else if(curBlock->getParseType()==IFSTAT){
+//                            IfStat* ifstat = dynamic_cast<IfStat*>(curBlock);
+//                            ifstat->m_action.push_back(ifstat);
+//                        }
+                        curFundef->m_allLocal.push_back(vardef);          //收集本函数内所有变量信息(包括不同作用域)
+                        
                     }else{
                         printf("%s is Redefinition\n",id->getName().c_str());
                     }
@@ -49,18 +80,37 @@ void Parse::syn_localvar(TAG datatype){
                     continue;
             }else if(match(SEMICON)){
                 if(!syn_isRedefinition(id->getName())){
-                    VarDef* symbol = syn_vardeclare(id->getName(),datatype);
-                    curSymbol->insert(id->getName(), symbol);
-                    symDeclares.push_back(symbol);
+                    VarDef* vardef = syn_vardeclare(id->getName(),datatype);
+                    
+                    SymDeclare* curBlock = getCurBlock();      //收集块内语句信息
+                    curBlock->m_symbols->insert(id->getName(),vardef);        //收集符号信息
+                    if(curBlock->getParseType()==FUNDEFINE){
+                        FunDef* fundef = dynamic_cast<FunDef*>(curBlock);
+                        fundef->m_action.push_back(vardef);
+                            
+                    }else if(curBlock->getParseType()==IFSTAT){
+                        IfStat* ifstat = dynamic_cast<IfStat*>(curBlock);
+                        ifstat->m_action.push_back(ifstat);
+                    }
+                    curFundef->m_allLocal.push_back(vardef);
                 }else{
                     printf("%s is Redefinition\n",id->getName().c_str());
                 }
                 break;
             }else if(match(COMMA)){
                 if(!syn_isRedefinition(id->getName())){
-                    VarDef* symbol = syn_vardeclare(id->getName(),datatype);
-                    curSymbol->insert(id->getName(), symbol);
-                    symDeclares.push_back(symbol);
+                    VarDef* vardef = syn_vardeclare(id->getName(),datatype);
+                    SymDeclare* curBlock = getCurBlock();      //收集块内语句信息
+                    curBlock->m_symbols->insert(id->getName(),vardef);        //收集符号信息
+                    if(curBlock->getParseType()==FUNDEFINE){
+                        FunDef* fundef = dynamic_cast<FunDef*>(curBlock);
+                        fundef->m_action.push_back(vardef);
+                            
+                    }else if(curBlock->getParseType()==IFSTAT){
+                        IfStat* ifstat = dynamic_cast<IfStat*>(curBlock);
+                        ifstat->m_action.push_back(ifstat);
+                    }
+                    curFundef->m_allLocal.push_back(vardef);
                 }else{
                     printf("%s is Redefinition\n",id->getName().c_str());
                 }
@@ -149,32 +199,45 @@ void Parse::syn_id(TAG datatype){
             if(match(LBRACE)){
                 if(!syn_isRedefinition(id->getName())){
                     FunDef* fundef = syn_fundef(id->getName(),datatype,paralist);
-                    fundef->sym_print();    //打印函数定义信息
-                    curSymbol->insert(id->getName(),fundef);
-                    symDeclares.push_back(fundef);
-                    ready_entry_funblock(paralist);     //将函数参数加入当前作用域符号表
+                    funSymbolTab.insert(std::make_pair(id->getName(),fundef));
+                    
+                    
+                    SymDeclare* curBlock = getCurBlock();
+                    
+                    //curBlock->m_symbols->insert(id->getName(), fundef);
+                    curBlock->m_action.push_back(fundef);
+                    
+                    curFundef = fundef;
+                    //fundef->sym_print();    //打印函数定义信息
+                    
+                    //SymDeclare* curBlock = getCurBlock();
+                    //fundef->symbols->insert(id->getName(),fundef);
+                    
+                    ready_entry_funblock(paralist,fundef);     //将函数参数加入当前作用域符号表
                     syn_block();
                     ready_leave_funblock();
-                    curFunEndLabel = new Label();
-                    symDeclares.push_back(curFunEndLabel);
-                    
+
                 }else{
                     printf("%s is Redefinition\n",id->getName().c_str());
                 }
             }else if(match(SEMICON)){
                 if(!syn_isRedefinition(id->getName())){
                     FunDeclare* fundeclare = syn_fundeclare(id->getName(), datatype, paralist);
-                    fundeclare->sym_print();    //打印函数声明信息
-                    curSymbol->insert(id->getName(), fundeclare);
-                    symDeclares.push_back(fundeclare);
+                    funSymbolTab.insert(std::make_pair(id->getName(), fundeclare));
+                    
+                    //fundeclare->sym_print();    //打印函数声明信息
+                    //fundeclare->m_symbols->insert(id->getName(), fundeclare);
+                    //symDeclares.push_back(fundeclare);
                 }else{
                     printf("%s is Redefinition\n",id->getName().c_str());
                 }
             }
         }else{
             VarDef* var_declare  = new VarDef(id->getName(),VARDECLARE,datatype,nullptr);
-            curSymbol->insert(id->getName(),var_declare);     //加入当前符号表，因为参数也在当前作用域内
-            symDeclares.push_back(var_declare);
+            SymDeclare* curBlock = getCurBlock();
+            curBlock->m_symbols->insert(id->getName(),var_declare);     //加入当前符号表，因为参数也在当前作用域内
+            
+            curFundef->m_allLocal.push_back(var_declare);
             if(match(SEMICON))
                 printf("var def\n");
             else if(match(COMMA))
@@ -242,16 +305,10 @@ void Parse::syn_case(){
             if(match_const()){
                 NUM* num = dynamic_cast<NUM*>(curToken);
                 if(match(COLON)){
-                    Label* label = new Label();
-                    if(sch->caseTab.find(num->getInt())==sch->caseTab.end()){
-                        sch->caseTab.insert(std::make_pair(num->getInt(),label));
-                    }else{
-                        printf("case redefinition\n");
-                    }
                     if(match(LBRACE)){
-                        entry_block();
-                        syn_block();
-                        leave_block();
+//                        entry_block();
+//                        syn_block();
+//                        leave_block();
                     }
                 }
             }
@@ -260,18 +317,18 @@ void Parse::syn_case(){
 }
 
 void Parse::syn_default(){
-    Label* default_label = new Label();
-    symDeclares.push_back(default_label);
+//    Label* default_label = new Label();
+//    symDeclares.push_back(default_label);
     if(!while_switch_Stacks.empty()){
           SymDeclare* symdeclare = while_switch_Stacks.at(while_switch_Stacks.size()-1);
           if(symdeclare->getParseType() == SWITCHDECLARE){
           Switch* sch = dynamic_cast<Switch*>(symdeclare);
               if(match(COLON)){
-                  if(sch->getDefaultLabel()==nullptr){
-                            sch->createDefaultLabel(default_label);
-                  }else{
-                      printf("Redefinition default in switch\n");
-                  }
+//                  if(sch->getDefaultLabel()==nullptr){
+//                            sch->createDefaultLabel(default_label);
+//                  }else{
+//                      printf("Redefinition default in switch\n");
+//                  }
               }
           }
     }
@@ -283,7 +340,7 @@ void Parse::syn_switch(){
     Switch* sch = new Switch();
     
     while_switch_Stacks.push_back(sch);
-    Label* endLabel = new Label();
+    //Label* endLabel = new Label();
     
     if(match(LPAREN)){
         
@@ -298,30 +355,23 @@ void Parse::syn_switch(){
     if(match(LBRACE)){
         
     }
-    entry_block();
+    entry_block(sch);
     syn_block();
     leave_block();
     
-    symDeclares.push_back(endLabel);
+    //symDeclares.push_back(endLabel);
 }
 
 void Parse::syn_do_while(){
     if(match(KW_DO)){
-        
-        Label* headLabel = new Label();
-        Label* endLabel = new Label();
-        
-        symDeclares.push_back(headLabel);
-        
         DoWhile* dowhile = new DoWhile();
-        dowhile->createHeadLabel(headLabel);
-        dowhile->createEndLabel(endLabel);
+        //curFundef->m_symdeclare.push_back(dowhile);
         while_switch_Stacks.push_back(dowhile);
         
         if(match(LBRACE)){
-            entry_block();
+            entry_block(dowhile);
             syn_block();
-            entry_block();
+            leave_block();
             if(match(KW_WHILE)){
                 
             }
@@ -332,7 +382,7 @@ void Parse::syn_do_while(){
             
             if(match(RPAREN)){
                 
-                symDeclares.push_back(endLabel);
+                //symDeclares.push_back(endLabel);
             }
             
             if(match(SEMICON)){
@@ -349,13 +399,16 @@ void Parse::syn_if_else_stat(){
     }else{
         printf("except (\n");
     }
-        
-    Label* first_label = new Label();
     
     IfStat* ifstat = new IfStat();
-    ifstat->setGotoLabel(first_label);
+    
+    SymDeclare* curBlock = getCurBlock();
+    
+    curBlock->m_action.push_back(ifstat);
+    
+    //判断当前块
+    
     ifstat->setExp(syn_exp());
-    symDeclares.push_back(ifstat);
     
     if(match(RPAREN))
     {
@@ -365,26 +418,31 @@ void Parse::syn_if_else_stat(){
     }
     
     if(match(LBRACE)){
-        entry_block();
+        entry_block(ifstat);
         syn_block();
         leave_block();
         
+        if(match(RBRACE)){
+            nextToken();
+        }
         //else
         if(match(KW_ELSE)){
             ElseStat* elsestat = new ElseStat();
-            elsestat->setGotoLabel(first_label);
-            symDeclares.push_back(elsestat);
+            curBlock = getCurBlock();
+            curBlock->m_action.push_back(elsestat);
             
-            Label* second_label = new Label();
-            ifstat->setGotoLabel(second_label);
-            symDeclares.push_back(second_label);
             if(match(LBRACE)){
-                entry_block();
+                entry_block(elsestat);
                 syn_block();
                 leave_block();
             }
+            
+            if(match(RBRACE)){
+                nextToken();
+            }
+            
         }else{
-             symDeclares.push_back(first_label);   //记录标签
+             //symDeclares.push_back(first_label);   //记录标签
         }
     }
     else{
@@ -552,23 +610,29 @@ ExpNode* Parse::syn_mul_div(){
 /*
  进入函数之前需要将参数传进当前作用域的符号表
  */
-void Parse::ready_entry_funblock(vector<SymDeclare*>* paralist){
-    entry_block();
-    for(vector<SymDeclare*>::iterator it = paralist->begin();it!=paralist->end();it++){
-        curSymbol->insert((*it)->getName(), *it);
+void Parse::ready_entry_funblock(vector<SymDeclare*>* paralist,SymDeclare* symdeclare){
+    entry_block(symdeclare);
+    FunDef* fundef = dynamic_cast<FunDef*>(symdeclare);
+    
+    for(size_t i=0;i<paralist->size();++i){
+        fundef->m_symbols->insert(paralist->at(i)->getName(), paralist->at(i));
     }
-   
+    
+//    for(vector<SymDeclare*>::iterator it = paralist->begin();it!=paralist->end();it++){
+//        fundef->m_symbols->insert((*it)->getName(), *it);
+//    }
 }
 
-void Parse::entry_block(){
-    curSymbol = new Symbols(); //创建符号表
-    symbolStack.push_back(curSymbol);
+void Parse::entry_block(SymDeclare* symdeclare){
+    blockStack.push_back(symdeclare);
+    //symdeclare->symbols = new Symbols(); //创建符号表
+    symbolStack.push_back(symdeclare->m_symbols);
 }
 
 void Parse::leave_block(){
+    blockStack.pop_back();
     symbolStack.pop_back();
-    curSymbol = symbolStack.at(symbolStack.size()-1);
-   
+    //curSymbol = symbolStack.at(symbolStack.size()-1);
 }
 
 void Parse::syn_block(){
@@ -584,6 +648,7 @@ void Parse::ready_leave_funblock(){
 FunDef* Parse::syn_fundef(string name,TAG datatype,vector<SymDeclare*>* paralist){
     FunDef* fundef = new FunDef(name,FUNDEFINE,datatype);  //函数定义
     fundef->paralist = paralist;
+    fundef->m_symbols = new Symbols();
     return fundef;
 }
 
@@ -600,19 +665,18 @@ FunCall* Parse::syn_funcall(string name,TAG datatype,vector<SymDeclare*>* parali
 }
 
 DoWhile* Parse::syn_genDoWhile(){
-//    Label* label = new Label();
-//
-//    DoWhile* doWhile = new DoWhile();
-//    symDeclares.push_back(doWhile);
     return nullptr;
 }
 
 void Parse::syn_genReturn(){
     
     Return* retObject = new Return();
+    //curFundef->m_symdeclare.push_back(retObject);
+    
     nextToken();
+    retObject->setDataType(curFundef->getDataType());
     retObject->setRetValue(syn_exp());
-    retObject->setGotoEndLabel(curFunEndLabel);
+ 
     if(match(SEMICON)){
         
     }
@@ -624,10 +688,10 @@ void Parse::syn_genBreak(){
         Break* brk = new Break();
         if(symdeclare->getParseType() == DOWHILE){
             DoWhile* dowhile = dynamic_cast<DoWhile*>(symdeclare);
-            brk->setGotoEndLabel(dowhile->getEndLabel());
+            //brk->setGotoEndLabel(dowhile->getEndLabel());
         }else if(symdeclare->getParseType() == CASEDECLARE){
             Switch* sch = dynamic_cast<Switch*>(symdeclare);
-            brk->setGotoEndLabel(sch->getEndLabel());
+            //brk->setGotoEndLabel(sch->getEndLabel());
         }
         symDeclares.push_back(brk);
     }else{
@@ -646,8 +710,8 @@ void Parse::syn_genContinue(){
             if(symdeclare->getParseType() == DOWHILE){
                 DoWhile* dowhile = dynamic_cast<DoWhile*>(symdeclare);
                 Continue* contie = new Continue();
-                contie->setGotoHeadLabel(dowhile->getHeadLabel());
-                symDeclares.push_back(contie);
+                //contie->setGotoHeadLabel(dowhile->getHeadLabel());
+                //symDeclares.push_back(contie);
                 break;
             }
         }
@@ -667,7 +731,7 @@ void Parse::syn_genCallVar(Id* id){
         SymDeclare*  sym_declare = syn_getTargetInfo(name,VARDEFINE);
         ExpNode* rootNode = syn_exp();
         VarCall* varcall = new VarCall(name,VARCALL,sym_declare->getDataType(),rootNode);
-        symDeclares.push_back(varcall);
+        //symDeclares.push_back(varcall);
     }else{
         printf("%s undefinition\n",name.c_str());
     }
@@ -704,7 +768,7 @@ void Parse::syn_genCallFun(Id* funid){
         
         FunCall* funcall = new FunCall(funid->getName(),FUNCALL,fun->getDataType());
         funcall->paralist = paralist;
-        symDeclares.push_back(funcall);
+        //symDeclares.push_back(funcall);
     }else if(match(RPAREN)){
         if(paraInfos->size()!=0){
             printf("%s except %ld argv\n", funid->getName().c_str(),paraInfos->size());
@@ -774,14 +838,6 @@ SymDeclare* Parse::syn_getTargetInfo(const string& name,PARSETYPE parsetype){
     return nullptr;
 }
 
-bool Parse::syn_callfun_check(const string &name,PARSETYPE parsetype){
-//    SymDeclare* sym_fundeclare = syn_getTargetInfo(name);
-//    if(sym_fundeclare == nullptr){
-//        return false;
-//    }
-    return true;
-}
-
 bool Parse::syn_isUndefinition(const string& name,PARSETYPE parsetype){
     SymDeclare* sym_fundeclare = syn_getTargetInfo(name,parsetype);
     return  sym_fundeclare == nullptr?true:false;
@@ -835,10 +891,12 @@ bool Parse::syn_symbols_check(const std::string& name,PARSETYPE parsetype){
 }
 
 bool Parse::syn_isRedefinition(const string& name){
+    Symbols* curSymbol = getCurSymbol();
     return curSymbol->find(name)==nullptr?false:true;
 }
 
 bool Parse::syn_isUnInitialization(const string& name){
+    Symbols* curSymbol = getCurSymbol();
     SymDeclare* symdeclare = curSymbol->find(name);
     VarDef* vardef = dynamic_cast<VarDef*>(symdeclare);
     return vardef->getValue() == nullptr?true:false;
@@ -847,13 +905,12 @@ bool Parse::syn_isUnInitialization(const string& name){
 bool Parse::match(TAG tag){
     
     if(curToken->getTag()==tag){
-        if(curToken->getTag()==ID ||match_const()){
+        if(curToken->getTag()==ID ||match_const()||curToken->getTag()==RBRACE){
             return true;
         }
         nextToken();
         return true;
     }
-    
     return false;
 }
 
@@ -876,8 +933,71 @@ bool Parse::match_type(){
        return false;
 }
 
+SymDeclare* Parse::getCurBlock(){
+    return blockStack.at(blockStack.size()-1);
+}
+
+Symbols* Parse::getCurSymbol(){
+    return symbolStack.at(symbolStack.size()-1);
+}
+
+void Parse::printAST_BFS(){
+    for(map<string,SymDeclare*>::iterator it = funSymbolTab.begin(); it!=funSymbolTab.end();++it){
+        FunDef*  fundef = dynamic_cast<FunDef*>(it->second);
+        cout<<fundef->getName()<<endl;
+        
+        queue<vector<SymDeclare*>> qe_list;         //广度遍历 BFS
+        
+        if(!fundef->m_action.empty()){
+            vector<SymDeclare*> temp = fundef->m_action;
+            qe_list.push(temp);
+            
+            while(!qe_list.empty()){
+                vector<SymDeclare*> nodes =qe_list.front();
+                qe_list.pop();
+                for(size_t i=0;i<nodes.size();++i){
+                    cout<<nodes.at(i)->getName()<<endl;
+                    if(nodes.at(i)->getParseType()==IFSTAT
+                       ||nodes.at(i)->getParseType()==ELSESTAT){
+                        qe_list.push(nodes.at(i)->m_action);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void Parse::printAST_DFS(){
+     for(map<string,SymDeclare*>::iterator it = funSymbolTab.begin(); it!=funSymbolTab.end();++it){
+         FunDef*  fundef = dynamic_cast<FunDef*>(it->second);
+         cout<<fundef->getName()<<endl;
+         if(!fundef->m_action.empty()){
+             vector<SymDeclare*> temp = fundef->m_action;
+             DFS(temp);
+         }
+         
+     }
+}
+
+void Parse::DFS(vector<SymDeclare *> ves){
+    for(size_t i = 0;i<ves.size();++i){
+        if(ves.at(i)->getParseType()== VARDEFINE){
+            cout<<ves.at(i)->getName()<<endl;
+        }else if(ves.at(i)->getParseType()==FUNDEFINE
+                 ||ves.at(i)->getParseType()==IFSTAT
+                 ||ves.at(i)->getParseType()==ELSESTAT){
+            cout<<ves.at(i)->getName()<<endl;
+            DFS(ves.at(i)->m_action);
+        }
+    }
+}
+
 void Parse::nextToken(){
     curToken = mTokens.at(mindex++);
+}
+
+map<string,SymDeclare*>* Parse::getFunSymTab(){
+    return &funSymbolTab;
 }
 
 void Parse::add_type_value(VarDataDef* vdd){

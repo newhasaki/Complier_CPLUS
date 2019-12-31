@@ -6,13 +6,13 @@
 //  Copyright © 2019 mac. All rights reserved.
 //
 
-
-//准备错误处理
 #include "scan.hpp"
 #include "parse.hpp"
+#include "semantics.hpp"
+
 int main(int argc, const char * argv[]) {
     Scan scan;
-    scan.readFile("/Users/mac/Desktop/testbuild/test.c");
+    scan.readFile("/Users/mac/Desktop/testbuild/mas.cpp");
     vector<Token*> tokens = scan.startScan();
     
     Token* endToken = new  Token(ERR);
@@ -20,6 +20,13 @@ int main(int argc, const char * argv[]) {
     
     Parse parse(tokens);
     parse.startParse();
+    //parse.printAST_BFS();
+    parse.printAST_DFS();
+    vector<Symbols*> symbolStack = parse.getSymbolStack();
+
+
+    Semantics semantic(parse.getFunSymTab());
+    semantic.start();
     
     return 0;
 }   
