@@ -83,7 +83,7 @@ public:
 public:
     
     vector<SymDeclare*>* paralist;
-    vector<SymDeclare*> localVars;
+    //vector<SymDeclare*> localVars;
 };
 
 class FunDef: public Fun{
@@ -168,6 +168,7 @@ public:
     ~IfStat(){}
 public:
     void setExp(ExpNode*);
+    ExpNode* getValue();
 private:
     ExpNode* exp;
 };
@@ -224,11 +225,12 @@ public:
     void setValue(VarDataDef value);
     VarDataDef getValue();
     void setVarName(string str);
+    string getVarName();
     void createParentNode(ExpNode* left,ExpNode* right,TAG tag);
 private:
     VarDataDef value;
     TAG nodetype;
-    std::string varname;
+    string varname;
 };
 
 #endif /* symbols_hpp */

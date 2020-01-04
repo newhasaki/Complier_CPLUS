@@ -21,7 +21,7 @@ int main(int argc, const char * argv[]) {
     Parse parse(tokens);
     parse.startParse();
     //parse.printAST_BFS();
-    parse.printAST_DFS();
+    //parse.printAST_DFS();
     vector<Symbols*> symbolStack = parse.getSymbolStack();
 
 

@@ -21,8 +21,6 @@ Parse::Parse(vector<Token*>& tokens){
     rootBlock->m_symbols = rootSymbol;
     blockStack.push_back(rootBlock);
     
-    
-    
     curFundef = nullptr;
 }
 

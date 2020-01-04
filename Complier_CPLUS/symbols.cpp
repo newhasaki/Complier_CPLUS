@@ -152,6 +152,10 @@ void IfStat::setExp(ExpNode* exp){
     this->exp = exp;
 }
 
+ExpNode* IfStat::getValue(){
+    return exp;
+}
+
 Case::Case(){
     setParseType(CASEDECLARE);
 }
@@ -204,6 +208,10 @@ VarDataDef ExpNode::getValue(){
 
 void ExpNode::setVarName(std::string varname){
     this->varname = varname;
+}
+
+string ExpNode::getVarName(){
+    return varname;
 }
 
 void ExpNode::createParentNode(ExpNode* left, ExpNode* right, TAG tag){

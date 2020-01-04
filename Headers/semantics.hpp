@@ -37,11 +37,12 @@ public:
     void genFunDefine(SymDeclare* symdeclare);
     void genFunEntry(SymDeclare* symdeclare);
     void genReturnDefine(SymDeclare* symdeclare);
-    void DFS(vector<SymDeclare*>);
-    
+    void deal_AST(vector<SymDeclare*>);
+    Symbols* getCurSymbols();
 public:
     void start();
-    ExpNode* postorder_traversal(ExpNode*);
+    ExpNode* postorder_traversal(ExpNode*); //后序遍历
+    ExpNode* preorder_traversal(ExpNode*);             //先序遍历
 private:
     map<string,SymDeclare*>* funSymbolTab;
     map<TAG,allocas> memory_alloca;
@@ -50,6 +51,8 @@ private:
     vector<Symbols*> m_symbolStack;
     
     vector<map<string,string>*> nmiStack;
+    map<TAG,string> typeToStr;
+    
 };
 
 #endif /* semantics_hpp */

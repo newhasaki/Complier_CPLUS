@@ -25,9 +25,29 @@ Semantics::Semantics(map<string,SymDeclare*>* funSymbolTab,vector<Symbols*> symb
     this->m_symbolStack = symbolStack;
     
     memory_alloca[KW_INT] = allocas{"i32","4"};
-    memory_alloca[KW_CHAR] = allocas{"i8","1"};
+    memory_alloca[CONST_INT] = allocas{"i32","4"};
+    
     memory_alloca[KW_FLOAT] = allocas{"float","4"};
+    memory_alloca[CONST_FLOAT] = allocas{"float","4"};
+    
+    memory_alloca[KW_CHAR] = allocas{"i8","1"};
     memory_alloca[KW_BOOL] = allocas{"i8","1"};
+    
+    typeToStr[KW_INT] = "int";
+    typeToStr[KW_FLOAT] = "float";
+    typeToStr[KW_BOOL] = "bool";
+    typeToStr[KW_CHAR] = "char";
+    
+    typeToStr[CONST_INT] = "IntegerLiteral 'int' ";
+    typeToStr[CONST_FLOAT] = "FloatingLiteral 'float' ";
+    typeToStr[CONST_STR] = "StrLiteral 'string' ";
+    typeToStr[CONST_CHAR] = "CharLiteral 'char' ";
+    typeToStr[ID] = "DeclRefExpr ";
+    typeToStr[ADD] = "+";
+    typeToStr[SUB] = "-";
+    typeToStr[MUL] = "*";
+    typeToStr[DIV] = "/";
+    //typeToStr[ADD] = "BinaryOperator"
 }
 
 void Semantics::genReturnDefine(SymDeclare* symdeclare){
@@ -46,7 +66,6 @@ void Semantics::genVarDefine(SymDeclare* symdeclare){
                 +", i32* "+cur_nmi->find(vardef->getName())->second+", align 4"<<endl;
             }
         }
-        
     }
 }
 
@@ -80,14 +99,15 @@ void Semantics::genFunEntry(SymDeclare *symdeclare){
     }
     
     //局部变量内存分配
-    for(size_t i =0;i<fundef->localVars.size();++i){
-        VarDef* local = dynamic_cast<VarDef*>(fundef->localVars.at(i));
+    for(size_t i =0;i<fundef->m_allLocal.size();++i){
+        VarDef* local = dynamic_cast<VarDef*>(fundef->m_allLocal.at(i));
         cout<<"%"+itos(++count)+" = "
         +"alloca "+ memory_alloca[local->getDataType()].datatype
         +", align " + memory_alloca[local->getDataType()].align<<endl;
         
         name_mapping_index->insert(std::make_pair(local->getName(),"%"+itos(count)));
     }
+    ass_index = count;
 }
 
 void Semantics::genFunDefine(SymDeclare* symdeclare){
@@ -114,33 +134,102 @@ void Semantics::genFunDefine(SymDeclare* symdeclare){
     }
 }
 
-void Semantics::DFS(vector<SymDeclare *> ves){
+Symbols* Semantics::getCurSymbols(){
+    return m_symbolStack.at(m_symbolStack.size()-1);
+}
+
+void Semantics::deal_AST(vector<SymDeclare *> ves){
     for(vector<SymDeclare*>::iterator it=ves.begin();it!=ves.end();++it){
         if((*it)->getParseType()==VARDEFINE){
+        VarDef* vardef = dynamic_cast<VarDef*>((*it));
+            if(vardef->getValue()!=nullptr){
+                ExpNode* expNode = vardef->getValue();
+                ExpNode* value = postorder_traversal(expNode);
+                switch (value->getNodeType()) {
+                    case CONST_INT:
+                        cout<<"store "+memory_alloca[vardef->getDataType()].datatype+" "
+                        +itos(value->getValue().idata) + " "
+                        +memory_alloca[vardef->getDataType()].datatype+"* "+ (*cur_nmi)[vardef->getName()]<<endl;
+                        break;
+                    case CONST_FLOAT:
+                        cout<<"store "+memory_alloca[value->getNodeType()].datatype
+                        +itos(value->getValue().vdata)+" "
+                        +memory_alloca[vardef->getDataType()].datatype+"* "+ (*cur_nmi)[vardef->getName()]<<endl;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }else if((*it)->getParseType()==IFSTAT){
+            IfStat* ifstat = dynamic_cast<IfStat*>(*it);
             
-        }else if((*it)->getParseType()==FUNDEFINE){
+            m_symbolStack.push_back(ifstat->m_symbols);
             
+            if(ifstat->getValue()!=nullptr){
+                ExpNode* expNode = ifstat->getValue();
+                
+
+                //ExpNode* value = postorder_traversal(expNode);
+                
+            }
         }
     }
 }
 
 void Semantics::start(){
     for(map<string,SymDeclare*>::iterator it = funSymbolTab->begin(); it!=funSymbolTab->end();++it){
-        vector<SymDeclare*> ves = it->second->m_action;
-        DFS(ves);
+        
+        FunDef* fundef = dynamic_cast<FunDef*>(it->second);
+        
+        m_symbolStack.push_back(fundef->m_symbols);
+        
+        cout<<"fun Name: "<<it->second->getName()<<endl;
+        genFunEntry(it->second);
+        vector<SymDeclare*> funves = fundef->m_action;
+        deal_AST(funves);
     }
+}
+
+ExpNode* Semantics::preorder_traversal(ExpNode* root){
+    
+    if(root->getNodeType()==CONST_INT
+       ||root->getNodeType()==CONST_FLOAT
+       ||root->getNodeType()==ID){
+        switch (root->getNodeType()) {
+            case CONST_INT:
+                 cout<<typeToStr[root->getNodeType()]<<root->getValue().idata<<endl;
+                break;
+            case CONST_FLOAT:
+                cout<<typeToStr[root->getNodeType()]<<root->getValue().vdata<<endl;
+                break;
+            case ID:
+                cout<<typeToStr[root->getNodeType()]<<root->getVarName()<<endl;
+            default:
+                break;
+        }
+        return nullptr;
+    }
+    
+    cout<<"BinaryOperator "<< typeToStr[root->getNodeType()]<<endl;
+   
+    preorder_traversal(root->left);
+    preorder_traversal(root->right);
+    return nullptr;
 }
 
 ExpNode* Semantics::postorder_traversal(ExpNode* root){
     
-    if(root->getNodeType()==CONST_INT||
-          root->getNodeType()==CONST_FLOAT||
-          root->getNodeType()==CONST_STR||
-          root->getNodeType()==CONST_CHAR||
-          root->getNodeType()==ID){
-       
-        
+    if(root->getNodeType()==CONST_INT||root->getNodeType()==CONST_FLOAT||
+          root->getNodeType()==CONST_STR||root->getNodeType()==CONST_CHAR){
          return root;
+    }else if(root->getNodeType()==ID){
+        ass_index++;
+        
+        Symbols* symbols=getCurSymbols();
+        SymDeclare* symdeclare = symbols->find(root->getVarName());
+        
+        cout<<"%"+itos(ass_index)+" = load "+ memory_alloca[symdeclare->getDataType()].datatype+", "
+        <<memory_alloca[symdeclare->getDataType()].datatype+"* "+memory_alloca[symdeclare->getDataType()].align<<endl;
     }
 
     ExpNode* leftNode = postorder_traversal(root->left);
