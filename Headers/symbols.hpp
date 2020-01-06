@@ -35,6 +35,7 @@ class ExpNode;
 class Symbols;
 class ParaList;
 class IfStat;
+class ElseStat;
 
 class SymDeclare{
 public:
@@ -152,6 +153,7 @@ public:
     ~Return(){}
 public:
     void setRetValue(ExpNode* retValue);
+    ExpNode* retRetValue();
 private:
     ExpNode* retValue;
 };
@@ -169,6 +171,8 @@ public:
 public:
     void setExp(ExpNode*);
     ExpNode* getValue();
+public:
+    ElseStat* elsestat;
 private:
     ExpNode* exp;
 };
@@ -222,6 +226,10 @@ public:
 public:
     void setNodeType(TAG tag);
     TAG getNodeType();
+    
+    void setDataType(TAG tag);
+    TAG getDataType();
+    
     void setValue(VarDataDef value);
     VarDataDef getValue();
     void setVarName(string str);
@@ -231,6 +239,7 @@ private:
     VarDataDef value;
     TAG nodetype;
     string varname;
+    TAG datatype;
 };
 
 #endif /* symbols_hpp */

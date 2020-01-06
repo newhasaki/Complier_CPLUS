@@ -57,13 +57,13 @@ void Semantics::genReturnDefine(SymDeclare* symdeclare){
 
 void Semantics::genVarDefine(SymDeclare* symdeclare){
     VarDef* vardef = dynamic_cast<VarDef*>(symdeclare);
-    string getAssName = cur_nmi->find(vardef->getName())->second;
+    //string getAssName = nmi_find(vardef->getName());
     if(vardef->getParseType() == VARDEFINE){        //初始化
         ExpNode* value = postorder_traversal(vardef->getValue());
         if(value->getNodeType() == CONST_INT){
             if(vardef->getDataType() == KW_INT){
                 cout<<"store i32 "+itos(value->getValue().idata)
-                +", i32* "+cur_nmi->find(vardef->getName())->second+", align 4"<<endl;
+                +", i32* "+nmi_find(vardef->getName()).name+", align 4"<<endl;
             }
         }
     }
@@ -71,10 +71,9 @@ void Semantics::genVarDefine(SymDeclare* symdeclare){
 
 void Semantics::genFunEntry(SymDeclare *symdeclare){
     
-    map<string,string>* name_mapping_index = new map<string,string>();
-    cur_nmi = name_mapping_index;
-    nmiStack.push_back(name_mapping_index);
-    
+    //map<string,string>* name_mapping_index = new map<string,string>();
+    name_mapping_index = new vector<std::pair<string, ass_register_info>>();
+   
     FunDef* fundef = dynamic_cast<FunDef*>(symdeclare);
     vector<SymDeclare*>* paralist = fundef->paralist;
     TAG retValue = fundef->getDataType();
@@ -95,7 +94,8 @@ void Semantics::genFunEntry(SymDeclare *symdeclare){
         +"alloca "+memory_alloca[para->getDataType()].datatype
         +", align "+memory_alloca[para->getDataType()].align<<endl;
         
-        name_mapping_index->insert(std::make_pair(para->getName(),"%"+itos(count)));
+        
+        name_mapping_index->push_back(std::make_pair(para->getName(),ass_register_info{"%"+itos(count),para->getDataType()}));
     }
     
     //局部变量内存分配
@@ -105,7 +105,7 @@ void Semantics::genFunEntry(SymDeclare *symdeclare){
         +"alloca "+ memory_alloca[local->getDataType()].datatype
         +", align " + memory_alloca[local->getDataType()].align<<endl;
         
-        name_mapping_index->insert(std::make_pair(local->getName(),"%"+itos(count)));
+        name_mapping_index->push_back(std::make_pair(local->getName(),ass_register_info{"%"+itos(count),local->getDataType()}));
     }
     ass_index = count;
 }
@@ -149,12 +149,20 @@ void Semantics::deal_AST(vector<SymDeclare *> ves){
                     case CONST_INT:
                         cout<<"store "+memory_alloca[vardef->getDataType()].datatype+" "
                         +itos(value->getValue().idata) + " "
-                        +memory_alloca[vardef->getDataType()].datatype+"* "+ (*cur_nmi)[vardef->getName()]<<endl;
+                        +memory_alloca[vardef->getDataType()].datatype+"* "
+                        + nmi_find(vardef->getName()).name+", align "+memory_alloca[value->getNodeType()].align<<endl;
                         break;
                     case CONST_FLOAT:
                         cout<<"store "+memory_alloca[value->getNodeType()].datatype
                         +itos(value->getValue().vdata)+" "
-                        +memory_alloca[vardef->getDataType()].datatype+"* "+ (*cur_nmi)[vardef->getName()]<<endl;
+                        +memory_alloca[vardef->getDataType()].datatype+"* "
+                        + nmi_find(vardef->getName()).name+", align "+memory_alloca[value->getNodeType()].align<<endl;
+                        break;
+                    case ID:
+                        cout<<"store "+memory_alloca[value->getDataType()].datatype+" "
+                        +value->getVarName()+ " "
+                        +memory_alloca[vardef->getDataType()].datatype+"* "
+                        +nmi_find(vardef->getName()).name+", align "+memory_alloca[value->getNodeType()].align<<endl;
                         break;
                     default:
                         break;
@@ -162,21 +170,46 @@ void Semantics::deal_AST(vector<SymDeclare *> ves){
             }
         }else if((*it)->getParseType()==IFSTAT){
             IfStat* ifstat = dynamic_cast<IfStat*>(*it);
-            
-            m_symbolStack.push_back(ifstat->m_symbols);
-            
+           
             if(ifstat->getValue()!=nullptr){
                 ExpNode* expNode = ifstat->getValue();
+                ExpNode* value = postorder_traversal(expNode);
+                m_symbolStack.push_back(ifstat->m_symbols);
                 
-
-                //ExpNode* value = postorder_traversal(expNode);
+                deal_AST(ifstat->m_action);
                 
+                m_symbolStack.pop_back();
+                
+                size_t endlabel = ass_index;
+                cout<<"br label %"+itos(endlabel)<<endl;
+                if(ifstat==nullptr){
+                    
+                }else{
+                    m_symbolStack.push_back(ifstat->elsestat->m_symbols);
+                    
+                    cout<<"; <label>:"+itos(iffalse)+":"<<endl;
+                    deal_AST(ifstat->elsestat->m_action);
+                    m_symbolStack.pop_back();
+                    cout<<"br label %"+itos(endlabel)<<endl;
+                }
+            }
+        }else if((*it)->getParseType()==RETURNDEFINE){
+            Return* retobject = dynamic_cast<Return*>(*it);
+            ExpNode* value = postorder_traversal(retobject->retRetValue());
+            switch (value->getNodeType()) {
+                case CONST_INT:
+                    cout<<"ret i32 "+ itos(value->getValue().idata)<<endl;
+                    cout<<"}"<<endl;
+                    break;
+                default:
+                    break;
             }
         }
     }
 }
 
 void Semantics::start(){
+    ass_index++;
     for(map<string,SymDeclare*>::iterator it = funSymbolTab->begin(); it!=funSymbolTab->end();++it){
         
         FunDef* fundef = dynamic_cast<FunDef*>(it->second);
@@ -186,8 +219,18 @@ void Semantics::start(){
         cout<<"fun Name: "<<it->second->getName()<<endl;
         genFunEntry(it->second);
         vector<SymDeclare*> funves = fundef->m_action;
+        
         deal_AST(funves);
     }
+}
+
+ass_register_info Semantics::nmi_find(const string& name){
+    for(auto it = name_mapping_index->begin();it!=name_mapping_index->end();++it){
+        if(it->first==name){
+            return it->second;
+        }
+    }
+    return ass_register_info{0};
 }
 
 ExpNode* Semantics::preorder_traversal(ExpNode* root){
@@ -223,13 +266,19 @@ ExpNode* Semantics::postorder_traversal(ExpNode* root){
           root->getNodeType()==CONST_STR||root->getNodeType()==CONST_CHAR){
          return root;
     }else if(root->getNodeType()==ID){
-        ass_index++;
+       
         
         Symbols* symbols=getCurSymbols();
         SymDeclare* symdeclare = symbols->find(root->getVarName());
         
         cout<<"%"+itos(ass_index)+" = load "+ memory_alloca[symdeclare->getDataType()].datatype+", "
-        <<memory_alloca[symdeclare->getDataType()].datatype+"* "+memory_alloca[symdeclare->getDataType()].align<<endl;
+        <<memory_alloca[symdeclare->getDataType()].datatype+"* "+nmi_find(root->getVarName()).name+" align "
+        +memory_alloca[symdeclare->getDataType()].align<<endl;
+        
+        root->setDataType(symdeclare->getDataType());
+        root->setVarName("%"+itos(ass_index++));
+        return root;
+        //return
     }
 
     ExpNode* leftNode = postorder_traversal(root->left);
@@ -245,6 +294,21 @@ ExpNode* Semantics::postorder_traversal(ExpNode* root){
                         
                         root->setNodeType(CONST_INT);
                         root->setValue(vardatadef);
+                    }else if(rightNode->getNodeType()==ID){
+                        cout<<"%"+itos(ass_index)+" = add nsw i32 "+itos(leftNode->getValue().idata)
+                        +", "+rightNode->getVarName()<<endl;
+                        root->setDataType(rightNode->getDataType());            //所有ID选项中需要setDataType
+                        root->setNodeType(ID);
+                        root->setVarName("%"+itos(ass_index++));
+                    }
+                }else if(leftNode->getNodeType()==ID){
+                    
+                    if(rightNode->getNodeType()==ID){
+                        cout<<"%"+itos(ass_index)+" = add nsw i32 "+leftNode->getVarName()+", "
+                        +rightNode->getVarName()<<endl;
+                        root->setDataType(rightNode->getDataType());            //所有ID选项中需要setDataType
+                        root->setNodeType(ID);
+                        root->setVarName("%"+itos(ass_index++));
                     }
                 }
             break;
@@ -276,6 +340,49 @@ ExpNode* Semantics::postorder_traversal(ExpNode* root){
                     vardatadef.vdata = leftNode->getValue().idata / rightNode->getValue().idata;
                     root->setNodeType(CONST_INT);
                     root->setValue(vardatadef);
+                }
+            }
+            break;
+        case LEA:
+            if(leftNode->getNodeType()==ID){
+                cout<<"%"+itos(ass_index)+" = and nsw "
+                + memory_alloca[leftNode->getNodeType()].datatype<<" "
+                +leftNode->getVarName()+", ";
+                
+                if(rightNode->getNodeType()==ID){
+                    cout<<rightNode->getVarName()<<endl;
+                    root->setNodeType(ID);
+                    root->setVarName("%"+itos(ass_index++));
+                }
+            }else if(leftNode->getNodeType()==CONST_INT){
+                if(rightNode->getNodeType()==ID){
+                    cout<<nmi_find(rightNode->getVarName()).name;
+                    root->setNodeType(ID);
+                    root->setVarName("%"+itos(ass_index++));
+                }
+            }
+        case AND:
+            if(leftNode->getNodeType()==ID){
+                
+                cout<<"%"+itos(ass_index)+" = icmp ne "+memory_alloca[leftNode->getDataType()].datatype+" "
+                +leftNode->getVarName()+", 0"<<endl;
+                
+                iftrue = ass_index+1;
+                iffalse = ass_index+2;
+                cout<<"br i1 %"+itos(ass_index++)+", label "+itos(ass_index++)+", label "+itos(ass_index++)<<endl;
+                
+                if(rightNode->getNodeType()==ID){
+                    
+                    cout <<"; <label>:"+itos(iftrue)<<":"<<endl;
+                    
+                    cout<<"%"+itos(ass_index)+" = icmp ne "+ memory_alloca[rightNode->getDataType()].datatype+" "
+                    +leftNode->getVarName()+", 0"<<endl;
+                    
+                    iftrue = ass_index+1;
+                    iffalse = ass_index+2;
+                    cout<<"br i1 %"+itos(ass_index++)+", label "+itos(ass_index++)+", label "+itos(ass_index++)<<endl;
+                    cout <<"; <label>:"+itos(iftrue)<<":"<<endl;
+                    
                 }
             }
             break;

@@ -184,6 +184,10 @@ void Return::setRetValue(ExpNode* retValue){
     this->retValue = retValue;
 }
 
+ExpNode* Return::retRetValue(){
+    return this->retValue;
+}
+
 ElseStat::ElseStat(){
     setParseType(ELSESTAT);
     setName("ElseStat");
@@ -196,6 +200,14 @@ TAG ExpNode::getNodeType(){
 
 void ExpNode::setNodeType(TAG tag){
     this->nodetype = tag;
+}
+
+void ExpNode::setDataType(TAG datatype){
+    this->datatype =datatype;
+}
+
+TAG ExpNode::getDataType(){
+    return datatype;
 }
 
 void ExpNode::setValue(VarDataDef value){

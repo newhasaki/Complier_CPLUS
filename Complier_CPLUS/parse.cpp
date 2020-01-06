@@ -399,6 +399,7 @@ void Parse::syn_if_else_stat(){
     }
     
     IfStat* ifstat = new IfStat();
+    ifstat->elsestat = nullptr;
     
     SymDeclare* curBlock = getCurBlock();
     
@@ -426,8 +427,7 @@ void Parse::syn_if_else_stat(){
         //else
         if(match(KW_ELSE)){
             ElseStat* elsestat = new ElseStat();
-            curBlock = getCurBlock();
-            curBlock->m_action.push_back(elsestat);
+            ifstat->elsestat = elsestat;
             
             if(match(LBRACE)){
                 entry_block(elsestat);
@@ -663,9 +663,10 @@ DoWhile* Parse::syn_genDoWhile(){
 }
 
 void Parse::syn_genReturn(){
+    SymDeclare* curBlock = getCurBlock();
     
     Return* retObject = new Return();
-    //curFundef->m_symdeclare.push_back(retObject);
+    curBlock->m_action.push_back(retObject);
     
     nextToken();
     retObject->setDataType(curFundef->getDataType());
